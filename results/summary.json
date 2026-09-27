@@ -572,20 +572,6 @@
    }
   },
   "_rationale": {
-   "haiku": {
-    "cost_ratio": 1.62,
-    "output_tokens_mean": [
-     19.3,
-     119.4
-    ],
-    "latency_p50_s": [
-     1.156,
-     2.449
-    ],
-    "quotes_total": 170,
-    "quote_fidelity": 0.7647,
-    "items_with_quote": 0.1625
-   },
    "flash": {
     "cost_ratio": 1.83,
     "output_tokens_mean": [
@@ -599,6 +585,20 @@
     "quotes_total": 1153,
     "quote_fidelity": 0.915,
     "items_with_quote": 0.9825
+   },
+   "haiku": {
+    "cost_ratio": 1.62,
+    "output_tokens_mean": [
+     19.3,
+     119.4
+    ],
+    "latency_p50_s": [
+     1.156,
+     2.449
+    ],
+    "quotes_total": 170,
+    "quote_fidelity": 0.7647,
+    "items_with_quote": 0.1625
    },
    "luna": {
     "cost_ratio": 1.47,
@@ -622,6 +622,20 @@
    "flash": 0.9167,
    "haiku": 0.9089,
    "sonnet": 0.9349
+  },
+  "_exploratory_bounds": {
+   "systems": [
+    "luna",
+    "flash",
+    "haiku",
+    "sonnet",
+    "jev"
+   ],
+   "n": 400,
+   "oracle_any_correct": 0.955,
+   "all_wrong": 0.045,
+   "all_wrong_same_label": 16,
+   "majority_vote_accuracy": 0.9
   }
  },
  "s2_fedreg": {
@@ -840,6 +854,19 @@
    "luna": 1.0,
    "flash": 0.9972,
    "haiku": 0.9944
+  },
+  "_exploratory_bounds": {
+   "systems": [
+    "luna",
+    "flash",
+    "haiku",
+    "jev"
+   ],
+   "n": 358,
+   "oracle_any_correct": 0.9972,
+   "all_wrong": 0.0028,
+   "all_wrong_same_label": 0,
+   "majority_vote_accuracy": 0.9972
   }
  },
  "p1_calibration": {

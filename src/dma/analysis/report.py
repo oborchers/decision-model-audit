@@ -190,6 +190,22 @@ def analyse_choice_source(name, raw, task_path, items_path, ambiguous_key=None):
                 keep = [r for r in rows if r["item_id"] not in drop]
                 sens[s] = round(np.mean([r["valid"] and r["pred"] == r["gold"] for r in keep]), 4)
         res["_exploratory_consensus_exclusion"] = sens
+        # exploratory: bounds on attainable accuracy (label = author's choice among overlapping categories)
+        systems = llm + ([("jev", "choice")] if ("jev", "choice") in g else [])
+        corr = defaultdict(dict)
+        for k in systems:
+            for r in g[k]:
+                corr[r["item_id"]][k[0]] = (r["pred"] == r["gold"], r["pred"])
+        full = {i: c for i, c in corr.items() if len(c) == len(systems)}
+        votes = [max(set(p for _, p in c.values()), key=[p for _, p in c.values()].count) for c in full.values()]
+        golds = [gold[i] for i in full]
+        res["_exploratory_bounds"] = {
+            "systems": [k[0] for k in systems], "n": len(full),
+            "oracle_any_correct": round(np.mean([any(x for x, _ in c.values()) for c in full.values()]), 4),
+            "all_wrong": round(np.mean([not any(x for x, _ in c.values()) for c in full.values()]), 4),
+            "all_wrong_same_label": len(drop) if len(systems) == len(llm) else sum(
+                1 for c in full.values() if not any(x for x, _ in c.values()) and len({p for _, p in c.values()}) == 1),
+            "majority_vote_accuracy": round(np.mean([v == gd for v, gd in zip(votes, golds)]), 4)}
     return res
 
 

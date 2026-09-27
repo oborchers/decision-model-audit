@@ -131,6 +131,11 @@ class GlinerRunner(Runner):
     system = "gliner"
     model_id = "fastino/GLiNER2.5-Decide"
     long = False
+    # gliner2 does not truncate (max_len=None) and attention memory grows quadratically.
+    # Measured on the M1 Pro 16 GB: 3.2k tokens = 9 s CPU / 30 s and 14 GB on MPS;
+    # 7k tokens on CPU swapped for >10 min; 19k tokens on MPS failed (22.6 GiB buffer).
+    # Longer inputs are refused (valid=False) instead of risking a swap storm.
+    max_tokens = 4096
 
     def __init__(self, device=None, **kw):
         super().__init__(device)
@@ -146,6 +151,11 @@ class GlinerRunner(Runner):
         self._torch = torch
 
     def _run(self, text, schema):
+        if not self.long and self.max_tokens:
+            n = len(self.clf.model.processor.tokenizer(text, add_special_tokens=False)["input_ids"])
+            if n > self.max_tokens:
+                raise MemoryError(f"input has {n} tokens > runner limit {self.max_tokens} "
+                                  f"(gliner2 does not truncate; gliner-long chunks long inputs)")
         if self.long:
             return self.clf.classify_long(text, schema, config=self.cfg,
                                           chunk_size=384, chunk_overlap=64, aggregate="max")
@@ -177,11 +187,15 @@ class GlinerRunner(Runner):
 class GlinerLongRunner(GlinerRunner):
     system = "gliner-long"
     long = True
+    max_tokens = None
 
 
 class Gliner1BRunner(GlinerRunner):
     system = "gliner-1b"
     model_id = "fastino/GLiNER2.5-Decide-1B"
+    # ModernBERT (Ettin) encoder, max_position_embeddings 7999. 19k tokens ran (106 s, 12 GB
+    # MPS) but past the trained positions; refused above 7999 tokens.
+    max_tokens = 7999
 
 
 # ---- Laya -----------------------------------------------------------------------------------
@@ -431,7 +445,6 @@ class TfidfRunner(Runner):
         super().__init__(device)
         if not train:
             raise SystemExit("tfidf needs --train <train.jsonl>")
-        import numpy as np
         import sklearn
         from sklearn.feature_extraction.text import TfidfVectorizer
         from sklearn.linear_model import LogisticRegression
@@ -542,7 +555,12 @@ def main(argv=None):
     items = load_items(args.items)
     if args.limit:
         items = items[: args.limit]
-    items = [it for it in items if it.get("task", task.name) == task.name] or items
+    n_all = len(items)
+    items = [it for it in items if it.get("task", task.name) == task.name]
+    if len(items) < n_all:
+        print(f"skipped {n_all - len(items)} items of other tasks", file=sys.stderr)
+    if not items:
+        raise SystemExit(f"no items for task {task.name}")
 
     check_variant(SYSTEMS[args.system], task, args.variant)
     t0 = time.perf_counter()
@@ -550,9 +568,10 @@ def main(argv=None):
     load_s = time.perf_counter() - t0
     meta = runner.meta()
 
-    # warm-up on the first item, excluded from results
+    # warm-up on the first item (cut to 64 words so a long item does not run twice), excluded
+    warm = {**items[0], "text": " ".join(items[0]["text"].split()[:64])}
     try:
-        predict(runner, task, items[0], args.variant)
+        predict(runner, task, warm, args.variant)
     except Exception:  # the timed calls below record the error per row
         import traceback
         print("warm-up failed:\n" + traceback.format_exc(), file=sys.stderr)
