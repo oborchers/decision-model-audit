@@ -62,7 +62,7 @@ def cached_call(path: str, body: dict) -> dict:
     """Return {'response', 'latency_s', 'cached'}; errors are cached too only if deterministic (4xx)."""
     key = hashlib.sha256((path + json.dumps(body, sort_keys=False)).encode()).hexdigest()
     f = CACHE / key[:2] / f"{key}.json"
-    if f.exists():
+    if f.exists() and not os.environ.get("DMA_NO_CACHE"):
         rec = json.loads(f.read_text())
         rec["cached"] = True
         return rec
@@ -70,7 +70,7 @@ def cached_call(path: str, body: dict) -> dict:
     rec = {"path": path, "request": body, "response": resp, "latency_s": latency, "ts": time.time()}
     err = resp.get("error") if isinstance(resp, dict) else None
     transient = err and (err.get("status") is None or err.get("status", 0) >= 500)
-    if not transient:
+    if not transient and not (os.environ.get("DMA_NO_CACHE") and f.exists()):
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(json.dumps(rec))
     rec["cached"] = False
