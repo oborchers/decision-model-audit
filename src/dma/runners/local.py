@@ -393,6 +393,9 @@ class QwenLPRunner(Runner):
         logits = self.model(arr[pos:][None], cache=cache)[0, -1].astype(mx.float32)
         lp = logits - mx.logsumexp(logits)
         mx.eval(lp)
+        # free the per-item KV cache; MLX's allocator otherwise keeps freed buffers (memory grew to 12 GB)
+        del cache, logits
+        (getattr(mx, "clear_cache", None) or mx.metal.clear_cache)()
         return lp
 
     def _letters(self, system, text, k):
@@ -561,6 +564,25 @@ def main(argv=None):
         print(f"skipped {n_all - len(items)} items of other tasks", file=sys.stderr)
     if not items:
         raise SystemExit(f"no items for task {task.name}")
+    # resume: skip items that already have a valid row for this system and variant in --out
+    out_path = Path(args.out)
+    if out_path.exists():
+        done = set()
+        for line in out_path.read_text().splitlines():
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if r.get("system") == args.system and r.get("variant") == args.variant and r.get("valid"):
+                done.add(r["item_id"])
+        before = len(items)
+        items = [it for it in items if it["item_id"] not in done]
+        if before - len(items):
+            print(f"resume: {before - len(items)} items already done", file=sys.stderr)
+        if not items:
+            print(json.dumps({"system": args.system, "variant": args.variant, "n": 0, "errors": 0,
+                              "resumed_all": True}))
+            return
 
     check_variant(SYSTEMS[args.system], task, args.variant)
     t0 = time.perf_counter()

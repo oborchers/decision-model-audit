@@ -103,3 +103,75 @@ Load times: `gliner` about 15 s, `gliner-1b` about 97 s (transformers first rand
 9. **yesno wording** is defined in this runner (`yesno_question`); an LLM runner for the same variant should import it so the wording is shared.
 10. **Latency includes tokenisation** of the full text; for GLiClass and NLI, tokenising an 18k-word text before truncation costs about 0.4 to 1.5 s.
 11. **`gliner-1b` load time** is about 97 s per process (redundant random weight init inside transformers), so run its variants in few processes.
+
+## Additional decision models (added after interim results)
+
+Runner: `src/dma/runners/local_extra.py`. It uses the same CLI, row format, warm-up, latency definition and stderr summary as `local.py`, because it registers its systems in `local.SYSTEMS` (in its own process only) and calls `local.main`. `local.py` is unchanged. These systems are reported in a separate block, not in the pre-registered comparison (protocol changelog).
+
+```
+uv run python -m dma.runners.local_extra --system eikos-4b|kev-0.8b|kev-4b|semif-4b \
+    --task <task.json> --items <items.jsonl> --variant <variant> --out <results.jsonl> [--device mlx|mps|cpu] [--limit N]
+```
+
+Every system runs its vendor's own inference code. The Eikos and SemIf code comes from their Hugging Face snapshots. The Kev, SemIf and jevbench code is vendored unmodified at pinned commits in `third_party/` (see `third_party/COMMITS.txt`, licences alongside). It is put on `sys.path` at load time and is not installed. The reason: `kev` pins `torch<2.9` and would conflict with the project's torch 2.14, and SemIf and jevbench would have to be installed with `--no-deps`. `pydantic` 2.13.5, which `kev.api` needs, is already in the environment.
+
+### Models and revisions
+
+| System | Model (HF commit) | Base | Code | Device | Vendor temperature / calibration |
+|---|---|---|---|---|---|
+| `eikos-4b` | `caiovicentino1/Eikos-4B-MLX-8bit` `5b1a88542bcf916a375a45418bc02af76f61e267` | `caiovicentino1/Eikos-4B` (`2b0f4d13…`, merged fine-tune of Qwen3.5-4B), MLX 8-bit, group 64 | shipped `mlx_decide.py` and `decision_core.py` from the snapshot | MLX | `calib.json` mode `T1`: w = 0, b = 0, so T = exp(0) = 1 for every question. Recorded per row as `vendor_temperature` and in `vendor_calibration`. |
+| `kev-0.8b` | `jaredpalmer/kev-0.8b` `9a45d25eb2ab761841196625383fa1dff0e56c1e` | `Qwen/Qwen3.5-0.8B-Base` `dc7cdfe2ee4154fa7e30f5b51ca41bfa40174e68` + LoRA r16 + pointer head | github.com/jaredpalmer/kev `5920c5fe` (`kev/`) | MLX bf16 (kev.serve default on Apple Silicon) | "as served": pointer-head logits divided by T = 2.3511 from `head.pt` |
+| `kev-4b` | `jaredpalmer/kev-4b` `139fdd94f1b6a6ad80cc15e08fcb99cac885a101` | `Qwen/Qwen3.5-4B-Base` `1001bb4d826a52d1f399e183466143f4da7b741b` | same | MLX bf16 | T = 2.41 from `head.pt` (card). Not yet loaded here. |
+| `semif-4b` | `vinci00/semif-qwen3.5-4b-mlx-4bit` `4ef6ec3e6e41f95ce6a6cf6deb0e6184753dddde` | frozen `Qwen/Qwen3.5-4B` `851bf6e8…`, MLX 4-bit affine, group 64, no fine-tuning | shipped `decision_mlx.py`; `semif_phase1` (SemIf `1f2dea3e`) and `jevbench.adapters.semif_direct` (jevbench `75e6224e`) | MLX | none: a raw softmax over the option-letter logits (T = 1). SemIf's per-workload temperature scaling has to be fitted on labelled workload data, and none ships with the model. It is not applied. |
+
+### How probabilities are obtained
+
+**eikos-4b.** `MLXDecider(snapshot).dist(text, q, options_of(q))`. The prompt style `letter-v1-semif` has a fixed system message and a JSON user message `{evidence, criterion, options[{letter, description: "label: description"}]}`. The chat template runs with `enable_thinking=False`. The readout takes the final hidden state times the tied embedding, restricted to the option-letter tokens A, B, …, then a softmax with the calibrated T. Choice variants: `criteria` is the label map. `noul`: `{"type": "noul", "instructions": question}` without criteria. `options_of` turns this into `yes`/`no`, shown as `true: yes` and `false: no`, and `p` = P(yes). `yesno`: the k yes/no questions go through the shipped `dist_many_cached` (the state prefix once, then the questions as one right-padded batch; the vendor documents this as equal to separate passes). `input_tokens` is recorded per row.
+
+**kev-0.8b / kev-4b.** `Checkpoint(repo).load(device, opts)` with `kev.serve.main`'s defaults (bf16; `attn=sdpa` on MPS; `backend=auto`, which gives MLX for the hybrid Qwen3.5 base on Apple Silicon; the LoRA is merged in fp32 and rounded once). The request is built as `/v1/systemone` builds it: `SystemOneRequest(state=text, questions=…)`, then `kev.api.to_record` and `model.encode(..., max_state=65536, max_branch=73728)`, then `model.probs`. Choice: `{"type": "choice", "instructions": task.instructions, "criteria": label map}`. Options are rendered as `name: description` and `probs` = the pointer-head softmax per label. `kev_confidence` records TypeSafe's (p_max − 1/K)/(1 − 1/K), while row `confidence` = p_max as for every other system. `noul`: `{"type": "noul", "instructions": question}`, options `[no, yes]`, `p` = P(yes). `yesno`: all k noul questions in one request. Kev runs each question as its own causal row on the shared state, so this equals k separate requests. Differences from kev.serve: no HTTP layer, and no cross-request state-prefix cache (it only saves time). Probabilities are kept unrounded, whereas the API rounds to 4 decimals. `KEV_DATE_FACTS` stays off (the serve default); the row field `date_facts` records it. `--device mps` or `cpu` selects Kev's PyTorch backend, which is slow because MPS has no Gated DeltaNet kernels.
+
+**semif-4b.** `decision_mlx.configure()` (vendor settings: Metal, cache limit 256 MiB, memory limit 12 GiB, seed 42), `mlx_lm.load(snapshot)`, then `predict(model, tok, "semif", task)`. jevbench's `SemIfDirectAdapter.build_request` maps the question. Choice: one option per label, described as `label: description`. `noul`: options `true`/`false`, described as `true: The proposition is true.` and `false: The proposition is false.` SemIf's `encode_prompt` then builds the same system message and JSON evidence/criterion/options payload as Eikos, with thinking disabled, and checks that the answer letters stay single tokens. Last-position logits are restricted to the letters, followed by a plain softmax. `yesno` uses the default loop, one call per label. `option_logits` and `input_tokens` are recorded per row. At most 16 options.
+
+### Context window and truncation
+
+| System | Window | What happens beyond it |
+|---|---|---|
+| `eikos-4b` | Base: 262,144 positions. Trained on inputs up to 32k tokens (card). | No truncation. The shipped `dist` prefills the whole prompt in one forward pass, without chunking, so memory grows with length. Long inputs are not yet measured on this machine. |
+| `kev-0.8b`, `kev-4b` | Serving limit: 65,536 state tokens (`SERVE_MAX_STATE`). Trained on states up to 7,552 tokens (`max_state` in `training_config.json`; decision-v7 used 384). | The state is right-truncated to 65,536 tokens without an error (kev.serve encodes non-strictly). The row flag `state_truncated` records this. A question branch over its row limit raises `ContextOverflow`, which gives an invalid row. |
+| `semif-4b` | 4,096 prompt tokens (SemIf's encoder budget) | Refused, no truncation: `ValueError`, which gives `valid=false`. In P3 this makes every cell above about 3,900 text tokens invalid (the 8k and 24k cells, and probably most 2k-token items once the prompt is added). |
+
+### Declared training data (from the cards)
+
+- **Eikos-4B** (card, `NOTICE`, dataset `caiovicentino1/eikos-decisions`): about 23k rows. The data is distilled from GLM-5.3-Flash at maximum reasoning effort. Items were written by Qwen3.8-27B and GLM-5.3-Flash and kept only where the blind teacher agreed with the gold answer. Programmatic items cover probability, calendar and finance arithmetic, trading and trade-finance rules, compositional rules and rulebooks. Answer verification uses GSM8K train (with Qwen3.5-0.8B solutions) and TAT-QA. Entity sentiment comes from FinEntity. There are long-context dossiers of 6k to 32k tokens made from other training items, and EN↔PT translations. Focus: finance, trading, trade finance, English and Portuguese. **arXiv, Federal Register or generic topic-classification sets are not declared.** Eval-only sets: MMLU-Pro, RewardBench, ASSIN2, BoolQ, Banking77, CLINC150, LegalBench, XNLI-es, CUAD, FinQA and others. The card reports 8-gram decontamination against its own evaluation sets only. The P1 urn and raffle probes are close to its programmatic "probability" family.
+- **Kev-0.8B / Kev-4B** (cards, `training_config.json`, suite manifests in the Kev repo): `decision-v7` has 10,000 public records, 1,000 each from Banking77, BoolQ, AG News, MultiNLI, SST-5, Yelp full, TREC, DBpedia-14, Amazon reviews (en) and IMDB. It adds 896 policy minimal pairs and 1,680 generated rule-structure records. The deltas add: 1,425 generated date and unknowable records; `documents-v1` with 5,219 CFPB consumer-complaint narratives (2015 to 2024; in Kev-4B round 8 and Kev-0.8B round 15); `hard-v1` with 6,000 programmatic skill records; and `devtools-v1` with 5,320 records from CodeReviewer, CommitPackFT, FlakeFlagger and Aegis. **These include generic topic-classification sets (AG News, DBpedia-14, TREC) and support-style intent data (Banking77, CFPB complaints).** arXiv and the Federal Register are not declared. MultiNLI's government genre contains a few Federal Register-style sentences (seen in the suites). The labels come from the datasets or from programs. The card states that no Jev outputs were used.
+- **SemIf** (card): no training or fine-tuning. The model is frozen Qwen3.5-4B, so its training data is Qwen's pre- and post-training data, which is undisclosed. The card says "evaluation overlap is unknown" and notes that public JevBench items were used in upstream development.
+
+### Latency and memory (toy run)
+
+Toy task and items as in the section above (6 ticket items, 6 noul items). These measurements ran **while the two main local lanes (qwen-lp on MLX, laya on MPS) were running and the machine was swapping** (memory pressure level "warning", 19 to 23 GB of swap in use). Latencies are therefore upper bounds and noisy; rerun them on an idle machine.
+
+| System | choice | choice_none | reversed | para0 | yesno (3) | noul | Peak RSS GB | MLX peak GB | Load s |
+|---|---|---|---|---|---|---|---|---|---|
+| `kev-0.8b` (MLX bf16) | 0.120 | 0.191 | 0.138 | 0.148 | 0.184 | 0.099 | 0.8 to 1.6 | 2.57 | 10 to 21 |
+| `semif-4b` | 8.5 to 19 s on 3 items (swap-bound); the process ended before its summary line | | | | | | | | |
+| `eikos-4b` | not run yet (memory) | | | | | | | | |
+| `kev-4b` | not run yet (memory) | | | | | | | | |
+
+Toy accuracy (smoke test only): kev-0.8b 6/6 on choice, reversed, para0 and yesno; 5/6 on choice_none and noul. On the probes it gave the urn (p = 0.3) P(yes) = 0.60 and the raffle (p = 0.8) P(yes) = 0.66. semif-4b got 3/3 on the choice items it completed, with probabilities of at least 0.998.
+
+**Memory feasibility on the M1 Pro 16 GB.** Expected footprints:
+- Eikos-4B-MLX-8bit: 4.5 GB of weights.
+- SemIf 4-bit: 2.2 GB of weights (card: 3.37 GiB peak MLX on its benchmark).
+- Kev-4B bf16: 8.4 GB of base weights plus a per-tensor merge transient. The card says "~9 GB for serving"; an unmerged fp32 path would take about 17 GB. Kev-4B is not feasible next to the running main lanes (swap 20 to 23 of about 25 GB in use). On an otherwise idle machine it probably fits, but this is untested. Kev-0.8B needs 2.6 GB MLX peak.
+- Long inputs will raise the Eikos and Kev peaks (the full-attention layers' KV and the unchunked prefill in Eikos).
+
+### Deviations and open points
+
+1. **Code not installed but vendored** at pinned commits (see above). SemIf's card pins mlx-lm at git commit `a63e24c3…`; this project uses mlx-lm 0.31.3 (release), which provides the same APIs `decision_mlx.py` imports. Parity against the vendor's recorded probabilities has not been checked yet.
+2. **Kev code version.** The released checkpoints were trained at Kev commits `45923b7a` (0.8B) and `6d02f5d0` (4B). Serving here uses the current `5920c5fe`. Between them, the bodies of `encode` and `to_record` are unchanged. The serving state limit rose from 8,192 to 65,536 tokens: at the training commits, states over 8,192 tokens were right-truncated there, and now they are kept up to 65,536. Other changes: serving memory handling (per-tensor merge, MLX cache limit, rows per pass) and TypeSafe's confidence formula, which only affects `kev_confidence`.
+3. **Kev runs on MLX, not MPS**, because that is kev.serve's Apple Silicon default. `--device mps` gives Kev's PyTorch backend if an MPS comparison is needed.
+4. **Kev probabilities are unrounded.** The HTTP API rounds to 4 decimals, and `kev_confidence` is taken from the rounded API answer.
+5. **SemIf has no calibration**, and **Eikos ships T = 1**. Neither is re-fitted here. The protocol does not refit any system.
+6. **Eikos `yesno` uses the batched cached path** (`dist_many_cached`), and Kev puts k questions in one request. Laya does the same; the other systems make k calls.
+7. **SemIf refuses prompts over 4,096 tokens** (invalid rows), in the same way the runner limits `gliner` and `gliner-1b`.
+8. **Toy latencies were measured under heavy swap** and must be remeasured before they are reported (Q7). Eikos and Kev-4B are untested pending memory.

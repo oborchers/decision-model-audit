@@ -1,0 +1,3 @@
+kev https://github.com/jaredpalmer/kev 5920c5fe4ca8e0970ed4209ac2c9b8e18bea5109 (kev/ package only)
+semif https://github.com/TheoLeeCJ/SemIf 1f2dea3e25379f9dfc98cb83c324f00ab5deda37 (src/semif_phase1 only)
+jevbench https://github.com/fstandhartinger/jevbench 75e6224ed8103bbc3485ca74820a2eaf7ce8abe0 (jevbench/ package only)

@@ -21,3 +21,7 @@ Done after the pilot and after the first Jev main runs, before any other main ru
 - On P1, `qwen-lp` letter probabilities are near 0.1 for "yes" regardless of the stated probability, and the encoder models (GLiNER, GLiClass, NLI, Laya) return values unrelated to the stated probability. Expected: token or entailment scores are not event probabilities. Reported as a finding, not treated as a bug.
 - Laya is weak on S1 (17 of 40) but not degenerate (predictions spread over 7 labels).
 - `gliner-1b` loads in about 95 s per process; the main run script accepts this.
+
+## Main local run incident (2026-09-27)
+
+- Swap reached 24.5 of 24.6 GB. Causes: a memory leak in `qwen-lp` (MLX kept freed per-item KV-cache buffers; the process grew to 12 GB RSS) and a concurrent toy test of an additional model. The toy test was stopped; the leak was fixed by releasing the cache and calling MLX `clear_cache()` after every item; the runner gained a resume step that skips items with an existing valid row. The qwen lane was restarted and resumed at 306 of 400 S1 items. Results are unaffected; latencies of this run are not used (see protocol changelog).
