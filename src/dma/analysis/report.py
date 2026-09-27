@@ -24,9 +24,15 @@ def load_rows(raw: Path, name: str) -> list[dict]:
         if f.exists():
             rows += [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
     # keep the last row per (system, variant, item) so reruns supersede earlier rows
-    last = {}
+    last, lat = {}, {}
     for r in rows:
-        last[(r["system"], r["variant"], r["item_id"])] = r
+        k = (r["system"], r["variant"], r["item_id"])
+        last[k] = r
+        if r.get("latency_s") is not None and not r.get("cached"):
+            lat[k] = r["latency_s"]  # latency of the original, non-cached request
+    for k, r in last.items():
+        if r.get("latency_s") is None and k in lat:
+            r["latency_s"] = lat[k]
     return list(last.values())
 
 
