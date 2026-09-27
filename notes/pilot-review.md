@@ -13,3 +13,11 @@ Done after the pilot and after the first Jev main runs, before any other main ru
 4. **P3 limitation:** the decisive sentence is stylistically foreign to the Federal Register filler. P3 measures whether a salient sentence is found in long input, not subtle long-document understanding.
 5. **S2 label noise:** NAGPRA notices are published under the National Park Service but written by museums and universities; "none" is defensible there.
 6. **Ceiling effects:** S2, P1 and P2 are near ceiling for all systems. Reported as findings; probes are not made harder after seeing results.
+
+## Local systems pilot (S1 40, P4 10, P1 8 items)
+
+- All local systems valid on all pilot items after one fix: `qwen-lp` supported at most 8 option letters; S1 with `none` needs 9. Extended to A–J (single-token check enforced in code).
+- `qwen-lp` shows a strong first-option bias (19 of 40 S1 pilot answers are option A, `cs.CL`). Kept as is; the `reversed` variant measures it.
+- On P1, `qwen-lp` letter probabilities are near 0.1 for "yes" regardless of the stated probability, and the encoder models (GLiNER, GLiClass, NLI, Laya) return values unrelated to the stated probability. Expected: token or entailment scores are not event probabilities. Reported as a finding, not treated as a bug.
+- Laya is weak on S1 (17 of 40) but not degenerate (predictions spread over 7 labels).
+- `gliner-1b` loads in about 95 s per process; the main run script accepts this.

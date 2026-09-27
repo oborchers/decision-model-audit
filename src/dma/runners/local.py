@@ -32,7 +32,7 @@ from pathlib import Path
 
 from dma.tasks import Task, load_items, result_row, write_rows
 
-LETTERS = "ABCDEFGH"
+LETTERS = "ABCDEFGHIJ"
 CHOICE_VARIANTS = ("choice", "choice_none", "reversed")
 
 
