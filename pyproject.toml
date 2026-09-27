@@ -4,14 +4,23 @@ version = "0.1.0"
 description = "Reproducible audit of decision models versus small LLMs with structured outputs"
 requires-python = ">=3.12"
 dependencies = [
+    "gliclass>=0.1.20",
+    "gliner2>=2.0.0",
     "httpx>=0.28.1",
+    "laya>=0.3.20",
+    "mlx-lm>=0.31.3",
     "numpy>=2.5.3",
     "pandas>=3.0.6",
+    "peft>=0.21.0",
+    "protobuf>=7.36.2",
     "python-dotenv>=1.2.3",
     "pyyaml>=6.0.3",
     "scikit-learn>=1.9.1",
     "scipy>=1.18.1",
+    "sentencepiece>=0.2.2",
+    "torch>=2.14.0",
     "tqdm>=4.70.1",
+    "transformers>=5.17.0",
 ]
 
 [build-system]

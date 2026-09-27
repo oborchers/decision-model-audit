@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import threading
 import time
 from pathlib import Path
 
@@ -21,12 +22,14 @@ KEY_PATH = Path("~/.config/agent-os/openrouter.env").expanduser()
 BASE = "https://openrouter.ai/api"
 
 _key: str | None = None
+_key_lock = threading.Lock()
 
 
 def _api_key() -> str:
     global _key
-    if _key is None:
-        _key = os.environ.get("OPENROUTER_API_KEY") or dotenv_values(KEY_PATH)["OPENROUTER_API_KEY"]
+    with _key_lock:
+        if _key is None:
+            _key = os.environ.get("OPENROUTER_API_KEY") or dotenv_values(KEY_PATH)["OPENROUTER_API_KEY"]
     return _key
 
 
@@ -57,7 +60,7 @@ def _post(path: str, body: dict, timeout: float = 120.0, retries: int = 4) -> tu
 
 def cached_call(path: str, body: dict) -> dict:
     """Return {'response', 'latency_s', 'cached'}; errors are cached too only if deterministic (4xx)."""
-    key = hashlib.sha256((path + json.dumps(body, sort_keys=True)).encode()).hexdigest()
+    key = hashlib.sha256((path + json.dumps(body, sort_keys=False)).encode()).hexdigest()
     f = CACHE / key[:2] / f"{key}.json"
     if f.exists():
         rec = json.loads(f.read_text())

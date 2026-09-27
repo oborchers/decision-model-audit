@@ -1,0 +1,30 @@
+{
+ "sample": 60,
+ "found": 60,
+ "primary_agree": 60,
+ "submitted_dates": [
+  "1 Sep 2026",
+  "10 Sep 2026",
+  "11 Sep 2026",
+  "12 Sep 2026",
+  "13 Sep 2026",
+  "14 Sep 2026",
+  "16 Sep 2026",
+  "17 Sep 2026",
+  "18 Sep 2026",
+  "2 Sep 2026",
+  "20 Sep 2026",
+  "21 Sep 2026",
+  "22 Sep 2026",
+  "23 Sep 2026",
+  "24 Sep 2026",
+  "3 Sep 2026",
+  "4 Sep 2026",
+  "5 Sep 2026",
+  "6 Sep 2026",
+  "7 Sep 2026",
+  "8 Sep 2026",
+  "9 Sep 2026"
+ ],
+ "disagreements": []
+}

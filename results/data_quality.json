@@ -1,0 +1,214 @@
+{
+ "s1_arxiv": {
+  "n": {
+   "pilot.jsonl": 40,
+   "main.jsonl": 400
+  },
+  "words": {
+   "mean": 205.7,
+   "median": 207.0,
+   "p5": 139.9,
+   "p95": 279.0,
+   "min": 88,
+   "max": 317
+  },
+  "labels": {
+   "cs.CL": 55,
+   "cs.CV": 55,
+   "cs.CR": 55,
+   "cs.RO": 55,
+   "cs.DB": 55,
+   "cs.SE": 55,
+   "cs.HC": 55,
+   "cs.DC": 55
+  },
+  "exact_duplicate_texts": 0,
+  "near_duplicate_items_cos>=0.9": 0,
+  "pilot_main_overlap": 0,
+  "ambiguous_share": 0.1182,
+  "label_topic_phrase_in_text_share": 0.225,
+  "n_categories_per_item": {
+   "2": 137,
+   "1": 241,
+   "5": 4,
+   "3": 46,
+   "4": 12
+  }
+ },
+ "s1_train_2024": {
+  "n": {
+   "train_2024.jsonl": 1698
+  },
+  "words": {
+   "mean": 181.0,
+   "median": 180.0,
+   "p5": 100.0,
+   "p95": 261.14999999999986,
+   "min": 58,
+   "max": 390
+  },
+  "labels": {
+   "cs.CV": 400,
+   "cs.RO": 266,
+   "cs.CL": 400,
+   "cs.CR": 176,
+   "cs.SE": 115,
+   "cs.DB": 31,
+   "cs.HC": 237,
+   "cs.DC": 73
+  },
+  "exact_duplicate_texts": 0,
+  "near_duplicate_items_cos>=0.9": 0,
+  "pilot_main_overlap": 0
+ },
+ "s2_fedreg": {
+  "n": {
+   "pilot.jsonl": 30,
+   "main.jsonl": 358
+  },
+  "words": {
+   "mean": 95.9,
+   "median": 87.5,
+   "p5": 52.0,
+   "p95": 165.64999999999998,
+   "min": 40,
+   "max": 263
+  },
+  "labels": {
+   "FAA": 86,
+   "ITA": 94,
+   "NPS": 55,
+   "FDA": 54,
+   "EPA": 51,
+   "NOAA": 48
+  },
+  "exact_duplicate_texts": 0,
+  "near_duplicate_items_cos>=0.9": 4,
+  "pilot_main_overlap": 0,
+  "residual_leak_share": 0.0026,
+  "doc_types": {
+   "Proposed Rule": 61,
+   "Rule": 67,
+   "Notice": 260
+  }
+ },
+ "p1_calibration": {
+  "n": {
+   "p1_calibration.pilot.jsonl": 8,
+   "p1_calibration.main.jsonl": 127
+  },
+  "words": {
+   "mean": 23.3,
+   "median": 25.0,
+   "p5": 20.0,
+   "p95": 25.0,
+   "min": 20,
+   "max": 25
+  },
+  "labels": {
+   "None": 135
+  },
+  "exact_duplicate_texts": 0,
+  "near_duplicate_items_cos>=0.9": null,
+  "pilot_main_overlap": 0,
+  "p_levels": {
+   "0.9": 15,
+   "0.1": 15,
+   "0.3": 15,
+   "0.4": 15,
+   "0.5": 15,
+   "0.6": 15,
+   "0.8": 15,
+   "0.2": 15,
+   "0.7": 15
+  }
+ },
+ "p2_minimal_pairs": {
+  "n": {
+   "p2_minimal_pairs.pilot.jsonl": 6,
+   "p2_minimal_pairs.main.jsonl": 74
+  },
+  "words": {
+   "mean": 14.8,
+   "median": 15.0,
+   "p5": 7.95,
+   "p95": 23.049999999999997,
+   "min": 4,
+   "max": 26
+  },
+  "labels": {
+   "billing": 16,
+   "upgrade": 16,
+   "cancel": 28,
+   "pause": 20
+  },
+  "exact_duplicate_texts": 0,
+  "near_duplicate_items_cos>=0.9": null,
+  "pilot_main_overlap": 0
+ },
+ "p3_long_input": {
+  "n": {
+   "p3_long_input.pilot.jsonl": 6,
+   "p3_long_input.main.jsonl": 114
+  },
+  "words": {
+   "mean": 6538.3,
+   "median": 3804.0,
+   "p5": 389.0,
+   "p95": 18164.05,
+   "min": 377,
+   "max": 18231
+  },
+  "labels": {
+   "False": 60,
+   "True": 60
+  },
+  "exact_duplicate_texts": 0,
+  "near_duplicate_items_cos>=0.9": null,
+  "pilot_main_overlap": 0,
+  "cells": {
+   "500@0.5": 10,
+   "500@0.95": 10,
+   "2000@0.05": 10,
+   "8000@0.5": 10,
+   "24000@0.05": 10,
+   "24000@0.95": 10,
+   "500@0.05": 10,
+   "2000@0.5": 10,
+   "2000@0.95": 10,
+   "8000@0.05": 10,
+   "8000@0.95": 10,
+   "24000@0.5": 10
+  }
+ },
+ "p4_no_fit": {
+  "n": {
+   "p4_no_fit.pilot.jsonl": 10,
+   "p4_no_fit.main.jsonl": 100
+  },
+  "words": {
+   "mean": 181.9,
+   "median": 183.0,
+   "p5": 91.35,
+   "p95": 266.55,
+   "min": 61,
+   "max": 296
+  },
+  "labels": {
+   "none": 110
+  },
+  "exact_duplicate_texts": 0,
+  "near_duplicate_items_cos>=0.9": 0,
+  "pilot_main_overlap": 0
+ },
+ "cross_checks": {
+  "s1_train_eval_overlap": 0,
+  "s1_p4_overlap": 0,
+  "duplicate_item_ids_across_all": 0,
+  "s1_primary_category_check": {
+   "sample": 60,
+   "found": 60,
+   "primary_agree": 60
+  }
+ }
+}

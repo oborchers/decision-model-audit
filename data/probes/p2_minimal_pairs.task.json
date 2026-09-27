@@ -1,0 +1,11 @@
+{
+ "name": "p2_minimal_pairs",
+ "type": "choice",
+ "instructions": "Route this customer message to the matching request type.",
+ "labels": {
+  "cancel": "The customer wants to end the subscription or contract permanently.",
+  "pause": "The customer wants to temporarily pause, freeze or skip the subscription and keep it.",
+  "billing": "The customer has a question or problem about charges, invoices, refunds or payment.",
+  "upgrade": "The customer wants a larger plan, a higher tier or more seats."
+ }
+}

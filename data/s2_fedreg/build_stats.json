@@ -1,0 +1,15 @@
+{
+ "candidates": 417,
+ "near_duplicates_dropped": 29,
+ "per_agency_kept": {
+  "FAA": 86,
+  "ITA": 94,
+  "NPS": 55,
+  "FDA": 54,
+  "EPA": 51,
+  "NOAA": 48
+ },
+ "pilot": 30,
+ "main": 358,
+ "residual_leak_rate_main": 0.0028
+}

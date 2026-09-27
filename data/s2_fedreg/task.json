@@ -1,0 +1,16 @@
+{
+ "name": "s2_fedreg",
+ "type": "choice",
+ "instructions": "Which U.S. federal agency issued this Federal Register document? Agency names are masked as [AGENCY].",
+ "labels": {
+  "FAA": "Aviation safety: aircraft, airworthiness, airspace and airports.",
+  "ITA": "International trade enforcement: antidumping and countervailing duties, trade promotion.",
+  "NPS": "Management of national parks, monuments, historic places and cultural resources.",
+  "FDA": "Safety of food, drugs, medical devices, biologics and tobacco products.",
+  "EPA": "Environmental protection: air and water quality, pesticides, chemicals and waste.",
+  "NOAA": "Oceans, fisheries, marine mammals, weather and atmosphere."
+ },
+ "none_label": {
+  "none": "None of the listed agencies issued this document."
+ }
+}

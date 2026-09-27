@@ -1,0 +1,40 @@
+{
+ "name": "p4_no_fit",
+ "type": "choice",
+ "instructions": "Which arXiv category is the primary category of this computer science paper?",
+ "labels": {
+  "cs.CL": "Computation and Language: natural language processing, computational linguistics, speech and language models.",
+  "cs.CV": "Computer Vision and Pattern Recognition: image and video analysis, visual recognition, image generation.",
+  "cs.CR": "Cryptography and Security: cryptography, authentication, attacks and defenses, privacy.",
+  "cs.RO": "Robotics: robot control, manipulation, locomotion, and planning and perception for robots.",
+  "cs.DB": "Databases: data management, data models, query languages and query processing.",
+  "cs.SE": "Software Engineering: design, testing, verification, maintenance and tooling of software.",
+  "cs.HC": "Human-Computer Interaction: user interfaces, user studies, interaction design, human factors.",
+  "cs.DC": "Distributed, Parallel, and Cluster Computing: distributed systems, parallel computation, cloud and clusters."
+ },
+ "none_label": {
+  "none": "None of the listed categories fits this paper."
+ },
+ "paraphrases": [
+  {
+   "cs.CL": "Research on human language: processing, understanding or generating text and speech with computers.",
+   "cs.CV": "Research on making computers see: analysing, recognising or synthesising images and video.",
+   "cs.CR": "Research on protecting systems and data: encryption, security vulnerabilities, attacks and privacy.",
+   "cs.RO": "Research on physical robots: how they move, grasp, plan and perceive their surroundings.",
+   "cs.DB": "Research on storing and querying data: database systems, data models and query evaluation.",
+   "cs.SE": "Research on how software is built and maintained: development processes, testing and program analysis.",
+   "cs.HC": "Research on people using technology: interface design, usability and studies with users.",
+   "cs.DC": "Research on computing across many machines or cores: distributed, parallel and cloud systems."
+  },
+  {
+   "cs.CL": "Computation and Language",
+   "cs.CV": "Computer Vision and Pattern Recognition",
+   "cs.CR": "Cryptography and Security",
+   "cs.RO": "Robotics",
+   "cs.DB": "Databases",
+   "cs.SE": "Software Engineering",
+   "cs.HC": "Human-Computer Interaction",
+   "cs.DC": "Distributed, Parallel, and Cluster Computing"
+  }
+ ]
+}

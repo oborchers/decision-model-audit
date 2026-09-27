@@ -1,0 +1,15 @@
+{
+ "fresh_primary_in_set": {
+  "cs.CL": 1278,
+  "cs.CV": 1955,
+  "cs.CR": 666,
+  "cs.RO": 1313,
+  "cs.DB": 74,
+  "cs.SE": 333,
+  "cs.HC": 367,
+  "cs.DC": 237
+ },
+ "pilot": 40,
+ "main": 400,
+ "ambiguous_share_main": 0.1275
+}

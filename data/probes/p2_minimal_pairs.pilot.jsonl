@@ -1,0 +1,6 @@
+{"item_id": "p2-2-3-a", "task": "p2_minimal_pairs", "text": "Quick question from a long-time customer: Why was I charged twice this month? Best regards", "label": "billing", "meta": {"pair": "2-3", "family": "pair2"}}
+{"item_id": "p2-2-3-b", "task": "p2_minimal_pairs", "text": "Quick question from a long-time customer: I was charged correctly this month, but I'd like to move up to the premium tier. Best regards", "label": "upgrade", "meta": {"pair": "2-3", "family": "pair2"}}
+{"item_id": "p2-8-1-a", "task": "p2_minimal_pairs", "text": "Hi support team, My card was declined and I'm confused about the invoice. Thanks, Alex", "label": "billing", "meta": {"pair": "8-1", "family": "pair8"}}
+{"item_id": "p2-8-1-b", "task": "p2_minimal_pairs", "text": "Hi support team, My card is fine, I want more seats for my team. Thanks, Alex", "label": "upgrade", "meta": {"pair": "8-1", "family": "pair8"}}
+{"item_id": "p2-9-1-a", "task": "p2_minimal_pairs", "text": "Hi support team, Terminate the contract effective immediately. Thanks, Alex", "label": "cancel", "meta": {"pair": "9-1", "family": "pair9"}}
+{"item_id": "p2-9-1-b", "task": "p2_minimal_pairs", "text": "Hi support team, Don't terminate the contract, just freeze it until January. Thanks, Alex", "label": "pause", "meta": {"pair": "9-1", "family": "pair9"}}
