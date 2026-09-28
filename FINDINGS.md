@@ -78,7 +78,7 @@ From `results/summary.json` (commit d35e0a1). Paired against Jev (choice) with H
 - Qwen3.5-4B via letter logprobs shows a strong first-option bias; SemIf (same base, vendor prompt) is the control (post hoc block).
 - **Question form (yes/no per label vs one choice) changes answers for most open models**: agreement with the choice run Laya 43.5%, GLiNER-1B 50%, Qwen 52.5%, GLiNER 66%, GLiClass 69%; Jev 97%, NLI 99.5%.
 
-**S2 Federal Register (358)**: API systems 99.2 to 99.7%; NLI 96.7%, GLiNER 93.0%, GLiClass 88.0%, Qwen 88.0%, GLiNER-1B 84.4%, Laya 81.0%. All local systems significantly below Jev except none are above it.
+**S2 Federal Register (358)**: API systems 99.2 to 99.7%; NLI 96.7%, GLiNER 93.0%, GLiClass 88.0%, Qwen 88.0%, GLiNER-1B 84.4%, Laya 81.0%. Every local system is significantly below Jev (Holm p ≤ 0.008).
 
 **P1 stated probability**: encoder models and Qwen letter probabilities are unrelated to the stated probability (MAE 0.28 to 0.43); LLMs exact; Jev MAE 0.027.
 
