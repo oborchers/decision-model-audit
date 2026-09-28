@@ -111,3 +111,7 @@ An independent review (`results/review-codex.md`) recomputed five headline numbe
 ## 2026-09-28, gaps closed (post hoc)
 
 Stability (agreement with own choice run, S1): Jev 97.5 to 99.0%, Luna 94.0 to 95.3%, Gemini 92.3 to 93.0%. Batches of 10 per request: Jev 84.8% (−1.5, n.s.), USD 0.026 per 1,000, 0.07 s per decision; Luna 89.5% (+0.8, n.s.), USD 0.048, 0.23 s. Repeatability (98 items, cache bypassed): label agreement Jev 99.0%, Haiku 99.0%, Gemini 98.0%, Luna 94.9%; Luna accuracy 89.8% vs 85.7% between identical runs. Details in `results/gaps.json` and REPORT.md.
+
+## 2026-09-28, supervised baselines with embeddings (post hoc)
+
+Same temporal split (train 2,806 arXiv abstracts from 2024, test S1). Qwen3-Embedding-8B + LR (balanced): 86.3% [82.5, 89.3], Δ vs Jev 0.0 [−3.3, +3.0], ECE 0.029, error at 80% coverage 7.2%, AURC 0.038 (lowest of all systems), AUROC "none fits" 0.925, USD 0.003 per 1,000 for embeddings. OpenAI text-embedding-3-large + LR: 85.3%, ECE 0.038, AURC 0.042, USD 0.037. TF-IDF + LR balanced: 83.0%. Class weighting adds 0.8 to 1 point. None of the accuracy differences to Jev is significant.

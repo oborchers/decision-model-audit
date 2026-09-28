@@ -6,7 +6,7 @@ Status: complete for the pre-registered design (protocol v1 with changelog) plus
 
 1. **On fresh data, Jev 1.13 cannot be distinguished from small general LLMs with structured output at this sample size.** On 400 arXiv papers from September 2026, Jev reaches 86.3%; GPT-6 Luna 88.7%, Gemini 3.5 Flash-Lite 88.0%, Claude Haiku 4.5 87.3%, Claude Sonnet 5 89.7%. All four LLM point estimates are above Jev (+1.0 to +3.5 points); none of the differences is significant after Holm correction (Sonnet: +3.5 [+0.8, +6.5] unadjusted, p_holm 0.12). This is not evidence of equivalence.
 2. **Jev is clearly ahead of every open zero-shot or decision model in the configuration tested here**, by 5.8 points (Eikos-4B, post hoc) to 42.8 points (Laya). GLiNER2.5-Decide trails by 12.8 points. Results depend on each model's interface and prompt: the same Qwen3.5-4B scores 53.2% with our option-letter readout and 77.5% with SemIf's vendor prompt. For the configurations that fit on a 16 GB laptop, the claim that open models have caught up does not hold on this data.
-3. **A supervised TF-IDF + logistic regression model trained on 2024 arXiv labels reaches 82.0%**, 4.3 points below Jev and not significant after correction. Old technique, milliseconds, no API, but it needs labelled data.
+3. **Supervised baselines trained on 2024 arXiv labels come close or match.** TF-IDF + logistic regression reaches 82.0% (83.0% with class weighting); logistic regression on Qwen3-Embedding-8B embeddings reaches 86.3%, equal to Jev, with better calibration (ECE 0.029 vs 0.068), the lowest AURC of all systems and about a twelfth of the cost (post hoc). The condition is labelled data.
 4. **Jev's advantages are real but narrower than marketed:** cheapest per decision (USD 0.035 per 1,000 vs 0.065 for GPT-6 Luna, 0.89 for Haiku), fastest API (p50 0.47 s vs 0.77 to 2.14 s), stable to label order and wording (97 to 99% identical answers), good at "none of these" (95% detected, 1% false). It is 1.6 to 4.5 times faster than small LLMs, not 200 times, and about 2 times cheaper than the cheapest small LLM.
 5. **Jev's probabilities are fragile.** 51.5% of its choice confidences are exactly 1.0, so the most confident half cannot be ranked. Asking the same decision as one yes/no question per label raises its ECE from 0.068 to 0.251; the yes-probabilities over all labels sum to a median of 1.25.
 6. **The rationale-first prompt costs accuracy.** In this prompt condition (rationale field first, instruction to quote the input) accuracy drops by 4.5 to 7 points for all three LLMs and cost rises 1.5 to 1.8 times. This measures that prompt condition, not rationales in general. Luna and Gemini quote the input verbatim in 92 to 97% of their quotations; Haiku rarely quotes.
@@ -160,6 +160,20 @@ Added after the limitations review (protocol changelog, `results/gaps.json`).
 Batching saves about a quarter of the cost for both; per decision Jev is then about 3.3 times faster and 1.8 times cheaper than Luna.
 
 **Repeatability (98 S1 items re-run with the cache bypassed):** label agreement Jev 99.0%, Haiku 99.0%, Gemini 98.0%, Luna 94.9%. Mean absolute confidence change: Haiku 0.004, Jev 0.007 (max 0.06), Gemini 0.017, Luna 0.036 (max 0.48). Luna's accuracy on these items moved from 89.8% to 85.7% between runs: single-run differences of a few points between LLMs are within run-to-run variation.
+
+### Post hoc: supervised baselines with modern embeddings (S1)
+
+Same temporal split as the pre-registered TF-IDF baseline (train: 2,806 arXiv abstracts from 2024, test: the 400 S1 papers), logistic regression with C chosen by 5-fold cross-validation on training data only. Separate Holm family.
+
+| System | Accuracy [95% CI] | Δ vs Jev [95% CI] | ECE | Error at 80% coverage | AURC | AUROC "none fits" | USD / 1,000 |
+|---|---|---|---|---|---|---|---|
+| Qwen3-Embedding-8B + LR, balanced | 86.3% [82.5, 89.3] | 0.0 [−3.3, +3.0] | 0.029 | 7.2% | **0.038** | 0.925 | 0.003 (embeddings) |
+| Qwen3-Embedding-8B + LR | 85.5% [81.7, 88.6] | −0.8 [−4.0, +2.5] | 0.040 | 8.1% | 0.042 | | 0.003 |
+| OpenAI text-embedding-3-large + LR, balanced | 85.3% [81.4, 88.4] | −1.0 [−4.3, +2.3] | 0.038 | 7.5% | 0.042 | 0.901 | 0.037 |
+| TF-IDF + LR, balanced | 83.0% [79.0, 86.4] | −3.3 [−7.3, +0.8] | 0.096 | 11.6% | 0.069 | 0.942 | local |
+| Jev 1.13 (reference) | 86.3% [82.5, 89.3] | | 0.068 | 8.6% | 0.067 | 0.900 | 0.035 |
+
+With about 2,800 labelled examples, an off-the-shelf embedding model plus logistic regression matches Jev's accuracy, is better calibrated, has the lowest AURC of all 23 systems, and costs about a twelfth per decision (embedding only; the classifier runs in microseconds). None of the accuracy or error-at-80% differences to Jev is significant. Class weighting adds 0.8 to 1 point. The balanced TF-IDF model chose the largest C in its grid (100); a wider grid might improve it slightly. The condition is labelled data: here it came free from arXiv; in practice it has to be collected.
 
 ### Bounds on attainable accuracy (S1, exploratory)
 

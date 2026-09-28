@@ -16,12 +16,12 @@ from dma.analysis.metrics import (aurc, bootstrap_ci, brier_top, ece_equal_mass,
 
 ROOT = Path(__file__).resolve().parents[3]
 SPLIT = "main"
-EXTRA = {"eikos-4b", "semif-4b", "kev-0.8b"}  # post hoc systems: separate Holm family
+EXTRA = {"eikos-4b", "semif-4b", "kev-0.8b", "tfidf-bal", "emb-qwen3-8b", "emb-qwen3-8b-unbal", "emb-oai-3l", "emb-oai-3l-unbal"}  # post hoc systems: separate Holm family
 
 
 def load_rows(raw: Path, name: str) -> list[dict]:
     rows = []
-    for f in [raw / f"{name}.jsonl", raw / f"{name}.local.jsonl", raw / f"{name}.extra.jsonl"]:
+    for f in [raw / f"{name}.jsonl", raw / f"{name}.local.jsonl", raw / f"{name}.extra.jsonl", raw / f"{name}.supervised.jsonl"]:
         if f.exists():
             rows += [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
     # keep the last row per (system, variant, item) so reruns supersede earlier rows
