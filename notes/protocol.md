@@ -121,3 +121,8 @@ OpenRouter reports cost per request; local latency is measured on an Apple M1 Pr
   - **TF-IDF training set:** not 400 per class. Harvested 2024 arXiv volume gives {'cs.CL': 400, 'cs.CR': 400, 'cs.CV': 400, 'cs.DB': 117, 'cs.DC': 289, 'cs.HC': 400, 'cs.RO': 400, 'cs.SE': 400} (2806 items); logistic regression uses these counts.
   - **Unambiguous S1 subset** results are computed in `summary.json` and now reported.
   - **Majority vote** (exploratory bounds) breaks ties by system order; the bounds analysis is indicative, not a measured ceiling.
+- 2026-09-28 (**post hoc, closing three methodological gaps** named in the limitations review):
+  - **LLM stability:** GPT-6 Luna and Gemini 3.5 Flash-Lite on S1 with `reversed`, `para0`, `para1` (Haiku and Sonnet omitted for cost), so the stability comparison with Jev is symmetric for two LLMs.
+  - **Several decisions per request:** Jev and GPT-6 Luna with 10 S1 papers per request (`batch10`, 40 requests, items shuffled with seed 20260928 so each batch mixes categories). Cost and latency are divided evenly across the items of a request. Paired accuracy against single-item requests.
+  - **Repeatability:** 98 S1 items (12 per class plus 4, seed 20260928, deduplicated) re-run with the request cache bypassed for Jev, Luna, Gemini and Haiku; agreement of labels and difference of confidences against the main run.
+  Output in `results/raw/gaps/`.

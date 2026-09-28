@@ -144,6 +144,23 @@ Ceiling for API systems (99.2 to 99.7%, no significant differences). Local syste
 
 SemIf uses the same Qwen3.5-4B base as our letter-logprob run and reaches 77.5% instead of 53.2%: reading an LLM as a classifier depends strongly on the prompt. Kev-4B was dropped (about 50 s per item on the laptop); 27B models and Shisa DE-1 were out of scope.
 
+### Post hoc: closing three gaps (stability of LLMs, batching, repeatability)
+
+Added after the limitations review (protocol changelog, `results/gaps.json`).
+
+**Stability, agreement with the system's own choice run (S1):** Jev 99.0% (reversed), 97.5% and 98.0% (paraphrases); GPT-6 Luna 94.0%, 95.3%, 95.3%; Gemini 92.3%, 92.3%, 93.0%. LLM accuracy stays between 85.8% and 89.0% across variants. Jev is the most stable of the three.
+
+**Ten decisions per request (S1, items shuffled so each request mixes categories):**
+
+| System | Accuracy single → batch of 10 | Paired Δ [95% CI] | USD / 1,000 single → batch | Latency per decision, batch (p50) |
+|---|---|---|---|---|
+| Jev | 86.3% → 84.8% | −1.5 [−3.8, +0.5], McNemar p 0.24 | 0.035 → 0.026 | 0.07 s (0.69 s per request) |
+| GPT-6 Luna | 88.8% → 89.5% | +0.8 [−1.8, +3.3], McNemar p 0.69 | 0.065 → 0.048 | 0.23 s (2.29 s per request) |
+
+Batching saves about a quarter of the cost for both; per decision Jev is then about 3.3 times faster and 1.8 times cheaper than Luna.
+
+**Repeatability (98 S1 items re-run with the cache bypassed):** label agreement Jev 99.0%, Haiku 99.0%, Gemini 98.0%, Luna 94.9%. Mean absolute confidence change: Haiku 0.004, Jev 0.007 (max 0.06), Gemini 0.017, Luna 0.036 (max 0.48). Luna's accuracy on these items moved from 89.8% to 85.7% between runs: single-run differences of a few points between LLMs are within run-to-run variation.
+
 ### Bounds on attainable accuracy (S1, exploratory)
 
 At least one of the five API systems is right on 95.5% of papers; all five are wrong on 4.5%, and on 16 of those 18 they agree on the same other category. Majority vote reaches 90.0% (2 items with a 2–2 tie, broken by system order; the alternative rule gives 90.25%). Excluding the 16 consensus items: Jev 89.8%, Luna 92.5%, Gemini 91.7%, Haiku 90.9%, Sonnet 93.5%, TF-IDF 84.1%, Eikos 83.9%. This suggests, but does not measure, a practical ceiling below 100%: the label is the author's choice among overlapping categories, and the 16 consensus items were not independently adjudicated.
@@ -165,6 +182,12 @@ Total OpenRouter spend: USD 4.69 including pilot and all reruns; every request i
 - **Local runs** are limited by 16 GB unified memory (refusals and failures on long inputs; Kev-4B dropped). Latencies of the main local run were affected by memory pressure and are not used.
 - **The post hoc block** (Eikos-4B, SemIf, Kev-0.8B; OOD AUROC; confidence informativeness; LLM false-none) was added after interim results and is exploratory.
 - **Sample sizes**: 400 items give about ±3.5 points at 86% accuracy; differences below 3 points between API systems are not resolvable.
+
+- **Single run per condition** in the main analysis. Re-running 98 items shows 1 to 5% of labels change between identical requests (most for GPT-6 Luna), so differences of a few points between LLMs are within run-to-run variation.
+- **Task type:** both real sources are topic or origin classification. Decisions with rules, exceptions, arithmetic or several interacting questions were not tested. English only; 6 to 8 labels (high-cardinality label sets not tested); a snapshot of September 2026.
+- **Global multiplicity:** Holm correction is applied within each source and family, not across all sources, metrics and variants.
+- **Reviewers:** the design and results were reviewed twice by another language model (Codex), not by a human domain expert. The article's thesis was formulated before the study; pre-registration and the changelog mitigate but do not remove this.
+- **Latency** was measured from Germany through OpenRouter in one time window (30 to 100 items); costs are OpenRouter list prices, local hardware cost is not included.
 
 ## Reproducibility
 

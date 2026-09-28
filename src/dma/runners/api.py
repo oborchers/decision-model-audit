@@ -120,6 +120,68 @@ def run_llm(system: str, task: Task, item: dict, variant: str) -> dict:
                       latency_s=lat, cost_usd=usage.get("cost"), extra=x)
 
 
+# ---------------- batches: several items in one request (post hoc gap closing) ----------------
+def run_batch(system: str, task: Task, items: list[dict], variant: str) -> list[dict]:
+    """One request for len(items) decisions. Jev: one state with all papers, one choice question per paper.
+    LLM: all papers in one user message, JSON array of labels and confidences. Cost and latency per request
+    are divided evenly across its items (recorded as cost_usd / latency_s per row, plus batch totals)."""
+    labels = task.label_map("choice")
+    k = len(items)
+    if system == "jev":
+        state = {"papers": {f"p{i}": it["text"] for i, it in enumerate(items)}}
+        qs = {f"q{i}": {"type": "choice", "instructions": f"{task.instructions} The paper is `papers.p{i}`.",
+                        "criteria": labels} for i in range(k)}
+        rec = decisions(JEV_MODEL, state, qs)
+        resp = rec["response"]
+        if "error" in resp:
+            return [result_row(it, system, variant, valid=False, extra={"error": resp["error"]}) for it in items]
+        cost, lat = resp["usage"]["cost"], (None if rec["cached"] else rec["latency_s"])
+        rows = []
+        for i, it in enumerate(items):
+            a = resp["answers"].get(f"q{i}")
+            if not a:
+                rows.append(result_row(it, system, variant, valid=False, extra={"error": "missing answer"}))
+                continue
+            rows.append(result_row(it, system, variant, pred=a["choice"], probs=a["probabilities"],
+                                   confidence=a["confidence"], latency_s=lat / k if lat else None, cost_usd=cost / k,
+                                   extra={"batch_size": k, "batch_cost": cost, "batch_latency_s": lat,
+                                          "cached": rec["cached"]}))
+        return rows
+    model, provider, extra = LLM[system]
+    sys_msg = (f"{task.instructions}\n\nOptions:\n{options_text(labels)}\n\nYou receive {k} papers, numbered 0 to "
+               f"{k - 1}. For each paper, in order, return the single best option and confidence, the probability "
+               "from 0 to 1 that it is correct.")
+    user = "\n\n".join(f"### Paper {i}\n{it['text']}" for i, it in enumerate(items))
+    item_schema = {"type": "object", "additionalProperties": False,
+                   "properties": {"paper": {"type": "integer"}, "label": {"type": "string", "enum": list(labels)},
+                                  "confidence": {"type": "number"}}, "required": ["paper", "label", "confidence"]}
+    fmt = _schema({"decisions": {"type": "array", "items": item_schema}}, ["decisions"])
+    body = {"model": model, "messages": [{"role": "system", "content": sys_msg}, {"role": "user", "content": user}],
+            "response_format": fmt, "max_tokens": 60 * k + 100, "usage": {"include": True},
+            "provider": {"order": [provider], "allow_fallbacks": False, "require_parameters": True}, **extra}
+    rec = chat(body)
+    resp = rec["response"]
+    if "error" in resp or not resp.get("choices"):
+        return [result_row(it, system, variant, valid=False, extra={"error": resp.get("error", resp)}) for it in items]
+    usage = resp.get("usage", {})
+    cost, lat = usage.get("cost") or 0, (None if rec["cached"] else rec["latency_s"])
+    try:
+        dec = {d["paper"]: d for d in json.loads(resp["choices"][0]["message"]["content"])["decisions"]}
+    except (json.JSONDecodeError, KeyError, TypeError) as e:
+        return [result_row(it, system, variant, valid=False, extra={"error": f"unparseable: {e}"}) for it in items]
+    rows = []
+    for i, it in enumerate(items):
+        d = dec.get(i)
+        if not d:
+            rows.append(result_row(it, system, variant, valid=False, extra={"error": "missing paper"}))
+            continue
+        c = float(d["confidence"])
+        rows.append(result_row(it, system, variant, pred=d["label"], probs={d["label"]: c}, confidence=c,
+                               latency_s=lat / k if lat else None, cost_usd=cost / k,
+                               extra={"batch_size": k, "batch_cost": cost, "batch_latency_s": lat, "cached": rec["cached"]}))
+    return rows
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--system", required=True)
@@ -133,10 +195,16 @@ def main() -> None:
     task, items = Task.load(a.task), load_items(a.items)
     if a.max_words:
         items = [i for i in items if len(i["text"].split()) <= a.max_words]
-    fn = (lambda it: run_jev(task, it, a.variant)) if a.system == "jev" else \
-         (lambda it: run_llm(a.system, task, it, a.variant))
-    with ThreadPoolExecutor(a.workers) as ex:
-        rows = list(ex.map(fn, items))
+    if a.variant.startswith("batch"):
+        k = int(a.variant[5:])
+        chunks = [items[i:i + k] for i in range(0, len(items), k)]
+        with ThreadPoolExecutor(a.workers) as ex:
+            rows = [r for rs in ex.map(lambda ch: run_batch(a.system, task, ch, a.variant), chunks) for r in rs]
+    else:
+        fn = (lambda it: run_jev(task, it, a.variant)) if a.system == "jev" else \
+             (lambda it: run_llm(a.system, task, it, a.variant))
+        with ThreadPoolExecutor(a.workers) as ex:
+            rows = list(ex.map(fn, items))
     write_rows(a.out, rows)
     ok = sum(r["valid"] for r in rows)
     cost = sum((r["cost_usd"] or 0) for r in rows if not r.get("cached"))

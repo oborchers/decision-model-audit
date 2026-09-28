@@ -1,0 +1,124 @@
+{
+ "stability": {
+  "flash/para0": {
+   "n": 400,
+   "agreement_with_choice": 0.9225,
+   "accuracy": 0.8875
+  },
+  "flash/para1": {
+   "n": 400,
+   "agreement_with_choice": 0.93,
+   "accuracy": 0.8575
+  },
+  "flash/reversed": {
+   "n": 400,
+   "agreement_with_choice": 0.9225,
+   "accuracy": 0.89
+  },
+  "luna/para0": {
+   "n": 400,
+   "agreement_with_choice": 0.9525,
+   "accuracy": 0.87
+  },
+  "luna/para1": {
+   "n": 400,
+   "agreement_with_choice": 0.9525,
+   "accuracy": 0.875
+  },
+  "luna/reversed": {
+   "n": 400,
+   "agreement_with_choice": 0.94,
+   "accuracy": 0.8775
+  }
+ },
+ "batch": {
+  "jev": {
+   "n": 400,
+   "accuracy_single": 0.8625,
+   "accuracy_batch10": 0.8475,
+   "acc_batch_ci95": [
+    0.809,
+    0.8794
+   ],
+   "delta": -0.015,
+   "delta_ci95": [
+    -0.0375,
+    0.005
+   ],
+   "mcnemar": {
+    "a_only": 12,
+    "b_only": 6,
+    "p": 0.237884521484375
+   },
+   "agreement_with_single": 0.955,
+   "cost_per_1k_single": 0.0352,
+   "cost_per_1k_batch10": 0.0261,
+   "latency_per_request_p50_s": 0.693,
+   "latency_per_decision_p50_s": 0.069,
+   "n_requests_latency": 100
+  },
+  "luna": {
+   "n": 400,
+   "accuracy_single": 0.8875,
+   "accuracy_batch10": 0.895,
+   "acc_batch_ci95": [
+    0.8611,
+    0.9214
+   ],
+   "delta": 0.0075,
+   "delta_ci95": [
+    -0.0175,
+    0.0325
+   ],
+   "mcnemar": {
+    "a_only": 11,
+    "b_only": 14,
+    "p": 0.6900379657745361
+   },
+   "agreement_with_single": 0.93,
+   "cost_per_1k_single": 0.0651,
+   "cost_per_1k_batch10": 0.0481,
+   "latency_per_request_p50_s": 2.293,
+   "latency_per_decision_p50_s": 0.229,
+   "n_requests_latency": 40
+  }
+ },
+ "repeat": {
+  "jev": {
+   "n": 98,
+   "label_agreement": 0.9898,
+   "conf_abs_diff_mean": 0.007,
+   "conf_abs_diff_max": 0.06,
+   "share_conf_identical": 0.6735,
+   "acc_run1": 0.8469,
+   "acc_run2": 0.8571
+  },
+  "luna": {
+   "n": 98,
+   "label_agreement": 0.949,
+   "conf_abs_diff_mean": 0.0359,
+   "conf_abs_diff_max": 0.48,
+   "share_conf_identical": 0.3265,
+   "acc_run1": 0.898,
+   "acc_run2": 0.8571
+  },
+  "flash": {
+   "n": 98,
+   "label_agreement": 0.9796,
+   "conf_abs_diff_mean": 0.0171,
+   "conf_abs_diff_max": 0.45,
+   "share_conf_identical": 0.7653,
+   "acc_run1": 0.8673,
+   "acc_run2": 0.8469
+  },
+  "haiku": {
+   "n": 98,
+   "label_agreement": 0.9898,
+   "conf_abs_diff_mean": 0.0041,
+   "conf_abs_diff_max": 0.2,
+   "share_conf_identical": 0.9694,
+   "acc_run1": 0.8571,
+   "acc_run2": 0.8469
+  }
+ }
+}

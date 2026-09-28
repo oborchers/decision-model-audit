@@ -107,3 +107,7 @@ From `results/summary.json` (commit d35e0a1). Paired against Jev (choice) with H
 An independent review (`results/review-codex.md`) recomputed five headline numbers from raw rows (all reproduced) and found no bug in Wilson, McNemar, Holm, bootstrap or risk at coverage. Corrections applied: wording changed from "as accurate as" to "not distinguishable at this sample size" (all LLM point estimates are above Jev); open-model results qualified by tested interface; accuracy ceiling reworded as indicative; ECE made independent of row order (Jev 0.064 → 0.068); 10,000 bootstrap resamples; Holm families separated (pre-registered systems, rationale variants, post hoc); unlogged deviations recorded in the protocol changelog; unambiguous-subset results added (ordering unchanged).
 
 **Rationale-first prompt, paired within each system:** Luna −7.0 points [−10.8, −3.5], p_holm 0.001; Gemini −4.5 [−7.8, −1.5], p_holm 0.016; Haiku −4.5 [−7.8, −1.3], p_holm 0.016. No rationale output hit the 600-token cap.
+
+## 2026-09-28, gaps closed (post hoc)
+
+Stability (agreement with own choice run, S1): Jev 97.5 to 99.0%, Luna 94.0 to 95.3%, Gemini 92.3 to 93.0%. Batches of 10 per request: Jev 84.8% (−1.5, n.s.), USD 0.026 per 1,000, 0.07 s per decision; Luna 89.5% (+0.8, n.s.), USD 0.048, 0.23 s. Repeatability (98 items, cache bypassed): label agreement Jev 99.0%, Haiku 99.0%, Gemini 98.0%, Luna 94.9%; Luna accuracy 89.8% vs 85.7% between identical runs. Details in `results/gaps.json` and REPORT.md.
