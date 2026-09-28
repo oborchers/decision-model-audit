@@ -16,11 +16,12 @@ from dma.analysis.metrics import (aurc, bootstrap_ci, brier_top, ece_equal_mass,
 
 ROOT = Path(__file__).resolve().parents[3]
 SPLIT = "main"
+EXTRA = {"eikos-4b", "semif-4b", "kev-0.8b"}  # post hoc systems: separate Holm family
 
 
 def load_rows(raw: Path, name: str) -> list[dict]:
     rows = []
-    for f in [raw / f"{name}.jsonl", raw / f"{name}.local.jsonl"]:
+    for f in [raw / f"{name}.jsonl", raw / f"{name}.local.jsonl", raw / f"{name}.extra.jsonl"]:
         if f.exists():
             rows += [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
     # keep the last row per (system, variant, item) so reruns supersede earlier rows
@@ -128,8 +129,12 @@ def analyse_choice_source(name, raw, task_path, items_path, ambiguous_key=None):
                 continue
             comps[f"{s}/{v}"] = paired_vs(ref, pi)
             pv[f"{s}/{v}"] = comps[f"{s}/{v}"]["mcnemar"]["p"]
-        for k, p in holm(pv).items():
-            comps[k]["mcnemar"]["p_holm"] = round(p, 5)
+        pre = {k: p for k, p in pv.items() if k.split("/")[0] not in EXTRA}
+        post = {k: p for k, p in pv.items() if k.split("/")[0] in EXTRA}
+        for fam, pvals in (("pre-registered", pre), ("post hoc", post)):
+            for k, p in holm(pvals).items():
+                comps[k]["mcnemar"]["p_holm"] = round(p, 5)
+                comps[k]["holm_family"] = fam
         res["_paired_vs_jev_choice"] = comps
     # stability of jev variants relative to jev/choice
     stab = {}
@@ -285,6 +290,62 @@ def analyse_p4(raw):
     return out
 
 
+def analyse_ood(raw):
+    """Post hoc: AUROC of each system's top confidence for separating S1 (a label fits) from P4 (none fits)."""
+    from sklearn.metrics import roc_auc_score
+    s1 = group(load_rows(raw, "s1"))
+    p4 = group(load_rows(raw, "p4"))
+    out = {}
+    for (s, v) in sorted(set(s1) & set(p4)):
+        if v != "choice":
+            continue
+        a = [float(r["confidence"]) for r in s1[(s, v)] if r["valid"] and r["confidence"] is not None]
+        b = [float(r["confidence"]) for r in p4[(s, v)] if r["valid"] and r["confidence"] is not None]
+        if len(a) < 50 or len(b) < 50:
+            continue
+        y = np.array([1] * len(a) + [0] * len(b))
+        x = np.array(a + b)
+        auc = roc_auc_score(y, x)
+        ci = bootstrap_ci(lambda yy, xx: roc_auc_score(yy, xx) if 0 < yy.sum() < len(yy) else np.nan, y, x, n=2000)
+        out[s] = {"n_in": len(a), "n_out": len(b), "auroc": round(float(auc), 4), "auroc_ci95": [round(c, 4) for c in ci],
+                  "post_hoc": True}
+    return out
+
+
+def analyse_degenerate(raw):
+    """Post hoc: how informative are the returned confidences (distinct values, saturation)."""
+    out = {}
+    for name in ("s1", "s2"):
+        for (s, v), rows in sorted(group(load_rows(raw, name)).items()):
+            if v != "choice":
+                continue
+            c = np.array([float(r["confidence"]) for r in rows if r["valid"] and r["confidence"] is not None])
+            if not len(c):
+                continue
+            out[f"{name}/{s}"] = {"n": len(c), "distinct_values": int(len(np.unique(np.round(c, 6)))),
+                                  "share_eq_1": round(float(np.mean(c >= 0.9999)), 4),
+                                  "share_ge_0.99": round(float(np.mean(c >= 0.99)), 4),
+                                  "std": round(float(c.std()), 4)}
+    return out
+
+
+def analyse_latency():
+    """Isolated latency run (protocol changelog): local at batch 1, API at concurrency 1, cache bypassed."""
+    out = {}
+    for f, kind in (("local.jsonl", "local"), ("api_c1.jsonl", "api")):
+        p = ROOT / "results/raw/latency" / f
+        if not p.exists():
+            continue
+        rows = [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
+        by = defaultdict(list)
+        for r in rows:
+            if r["valid"] and r.get("latency_s") is not None and not r.get("cached"):
+                by[r["system"]].append(r["latency_s"])
+        for s, x in by.items():
+            out[s] = {"kind": kind, "n": len(x), "p50_s": pctl(x, 50), "p95_s": pctl(x, 95)}
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", default="results/raw/main")
@@ -298,6 +359,8 @@ def main():
         "s2_fedreg": analyse_choice_source("s2", raw, "data/s2_fedreg/task.json", "data/s2_fedreg/main.jsonl"),
         "p1_calibration": analyse_p1(raw), "p2_minimal_pairs": analyse_p2(raw),
         "p3_long_input": analyse_p3(raw), "p4_no_fit": analyse_p4(raw),
+        "post_hoc_ood_auroc": analyse_ood(raw), "post_hoc_degenerate": analyse_degenerate(raw),
+        "latency_isolated": analyse_latency(),
     }
     (ROOT / f"results/summary{'' if SPLIT == 'main' else '_' + SPLIT}.json").write_text(json.dumps(summary, indent=1, default=str))
     print(json.dumps(summary, indent=1, default=str)[:6000])

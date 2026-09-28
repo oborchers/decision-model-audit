@@ -87,3 +87,17 @@ From `results/summary.json` (commit d35e0a1). Paired against Jev (choice) with H
 **P4 no fitting label, with a "none" option**: GLiClass 100%, Jev 95%, NLI 94%, GLiNER-1B 92%, Gemini 87%, Luna 86%, Qwen 67%, Haiku 65%, GLiNER 25%, Laya 13%.
 
 **Post hoc block (Eikos-4B, SemIf, Kev-0.8B)**: runs complete; analysis pending. Kev-4B dropped (hardware), see protocol changelog.
+
+## 2026-09-28, post hoc block and additional analyses (exploratory)
+
+**Additional decision models, S1 arXiv** (separate Holm family): Eikos-4B 80.5% [76.3, 84.1], −5.8 pp vs Jev [−9.0, −2.8], p_holm < 0.001; SemIf 4B 77.5% [73.2, 81.3], −8.8 pp, p_holm < 0.001; Kev-0.8B 64.5% [59.7, 69.0], −21.8 pp, p_holm < 0.001. S2: 97.2 to 97.8%. SemIf (same Qwen3.5-4B base as our letter-logprob run, vendor prompt) reaches 77.5% versus 53.2% for our prompt: the logprob approach depends strongly on the prompt. Agreement between yes/no and choice form: Eikos 93%, Kev-0.8B 88%, SemIf 84%. P3: Eikos 1.00 up to 8k, fails at 24k (memory); Kev-0.8B 0.93 / 0.93 / 0.79 / 0.46; SemIf refuses > 4,096 tokens. P4 with "none": SemIf 97%, Eikos 95%, Kev-0.8B 86%.
+
+**Detecting "no fitting label" without a threshold** (AUROC of top confidence, S1 in-set vs P4 out-of-set): Gemini 0.990, Haiku 0.985, SemIf 0.940, TF-IDF 0.939, Kev-0.8B 0.919, GLiNER 0.915, Eikos 0.901, **Jev 0.900**, NLI 0.898, Qwen 0.849, GLiNER-1B 0.818, GLiClass 0.788, **Luna 0.624**, Laya 0.619.
+
+**Informativeness of confidences (S1)**: Jev returns 53 distinct values and exactly 1.0 for 51.5% of items, so its top half cannot be ranked (flat segment in the risk–coverage curve up to about 60% coverage). Verbalized LLM confidences are coarse: Gemini 8 distinct values, Haiku 9, Luna 25, Sonnet 28. Encoders and logprob readouts are continuous.
+
+**Latency, isolated** (p50 / p95 seconds; local on M1 Pro at batch 1 with nothing else loaded, API at concurrency 1 with cache bypassed, 50 or 30 S1 items): TF-IDF 0.001; Laya 0.14 / 0.15; Kev-0.8B 0.21 / 0.26; GLiNER-1B 0.36 / 0.46; GLiClass 0.46 / 0.66; **Jev 0.47 / 0.60**; GLiNER 0.54 / 0.80; Gemini 0.77 / 1.06; Haiku 1.07 / 1.65; Luna 1.14 / 2.29; Qwen letter logprobs 1.66 / 2.16; SemIf 1.70 / 2.10; DeBERTa NLI 1.73 / 3.03; Sonnet 2.14 / 6.54; Eikos 2.69 / 4.71. Local numbers are laptop numbers and not comparable to GPU serving.
+
+**Spend reconciled**: every OpenRouter request is in the cache; cached costs plus the uncached latency run sum to USD 4.263 against USD 4.249 account usage since project start. Remaining balance USD 1.55.
+
+**Figures**: `results/figures/` (risk–coverage, reliability, cost against accuracy, long input).

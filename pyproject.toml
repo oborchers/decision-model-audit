@@ -8,6 +8,7 @@ dependencies = [
     "gliner2>=2.0.0",
     "httpx>=0.28.1",
     "laya>=0.3.20",
+    "matplotlib>=3.11.2",
     "mlx-lm>=0.31.3",
     "numpy>=2.5.3",
     "pandas>=3.0.6",
