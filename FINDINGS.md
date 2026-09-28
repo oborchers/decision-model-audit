@@ -51,3 +51,39 @@ Numbers from `results/summary.json` (protocol v1 with changelog). 95% Wilson int
 **P4 no fitting label (100 non-CS papers)**: with a "none" option: Jev 95%, Gemini 87%, Luna 86%, Haiku 65%. Forced choice (all answers wrong by construction): share with confidence ≥ 0.9: Luna 53%, Jev 11%, Gemini 1%, Haiku 0%.
 
 **Spend**: USD 3.84 in total (pilot 0.29). Remaining balance USD 1.96.
+
+## 2026-09-28, main run: local systems (pre-registered block)
+
+From `results/summary.json` (commit d35e0a1). Paired against Jev (choice) with Holm correction within the pre-registered family. Local latencies of this run are not used (see protocol changelog).
+
+**S1 arXiv, all pre-registered systems (400 papers)**
+
+| System | Accuracy [95% CI] | Δ vs Jev [95% CI] | Holm p | Error at 80% coverage | ECE |
+|---|---|---|---|---|---|
+| Claude Sonnet 5 | 89.7% [86.4, 92.4] | +3.5 [+0.8, +6.5] | 0.17 | 6.8% | 0.079 |
+| GPT-6 Luna | 88.7% [85.3, 91.5] | +2.5 [−0.5, +5.5] | 0.57 | 8.5% | 0.055 |
+| Gemini 3.5 Flash-Lite | 88.0% [84.5, 90.8] | +1.8 [−1.0, +4.5] | 0.62 | 10.0% | 0.062 |
+| Claude Haiku 4.5 | 87.3% [83.6, 90.2] | +1.0 [−1.8, +3.5] | 0.62 | 10.3% | 0.063 |
+| **Jev 1.13** | **86.3% [82.5, 89.3]** | | | 8.6% | 0.064 |
+| TF-IDF + logistic regression (trained on 2024 arXiv) | 82.0% [77.9, 85.5] | −4.3 [−8.3, −0.3] | 0.34 | 11.6% | 0.083 |
+| GLiNER2.5-Decide | 73.5% [69.0, 77.6] | −12.8 [−16.8, −8.8] | <0.001 | 21.6% | 0.088 |
+| GLiNER2.5-Decide-1B | 69.8% [65.1, 74.1] | −16.5 [−20.8, −12.3] | <0.001 | 25.9% | 0.152 |
+| DeBERTa-v3 NLI zero-shot | 66.7% [62.0, 71.2] | −19.5 [−24.0, −15.0] | <0.001 | 26.9% | 0.085 |
+| GLiClass large v3 | 64.2% [59.4, 68.8] | −22.0 [−27.0, −17.0] | <0.001 | 26.9% | 0.074 |
+| Qwen3.5-4B, letter logprobs | 53.2% [48.4, 58.1] | −33.0 [−38.0, −28.0] | <0.001 | 39.1% | 0.108 |
+| Laya | 43.5% [38.7, 48.4] | −42.8 [−48.5, −37.0] | <0.001 | 50.0% | 0.109 |
+
+- On fresh data Jev is clearly ahead of every open zero-shot decision model tested, by 13 to 43 points. Laya's weakness is consistent with LangWatch (Laya-typed 38.2% there).
+- A supervised TF-IDF baseline trained on 2024 arXiv labels trails Jev by 4.3 points; not significant after Holm correction. It needs labelled training data, which is exactly what zero-shot avoids.
+- Qwen3.5-4B via letter logprobs shows a strong first-option bias; SemIf (same base, vendor prompt) is the control (post hoc block).
+- **Question form (yes/no per label vs one choice) changes answers for most open models**: agreement with the choice run Laya 43.5%, GLiNER-1B 50%, Qwen 52.5%, GLiNER 66%, GLiClass 69%; Jev 97%, NLI 99.5%.
+
+**S2 Federal Register (358)**: API systems 99.2 to 99.7%; NLI 96.7%, GLiNER 93.0%, GLiClass 88.0%, Qwen 88.0%, GLiNER-1B 84.4%, Laya 81.0%. All local systems significantly below Jev except none are above it.
+
+**P1 stated probability**: encoder models and Qwen letter probabilities are unrelated to the stated probability (MAE 0.28 to 0.43); LLMs exact; Jev MAE 0.027.
+
+**P3 long input (accuracy by length 500 / 2k / 8k / 24k tokens; refused inputs count as errors)**: Jev and Luna 1.00 throughout. GLiNER chunked 1.00 / 1.00 / 0.93 / 0.86. GLiClass 0.96 / 0.76 / 0.66 / 0.50, NLI 0.64 / 0.48 / 0.48 / 0.46 and Laya 0.75 / 0.59 / 0.55 / 0.46 (truncation: they only see the start). Laya-long answers "yes" to almost everything at length (specificity 0.50 at 2k, 0.14 at 8k). GLiNER refuses > 4,096 tokens, GLiNER-1B > 7,999 (memory and position limits on the M1 Pro). Qwen 0.71 / 0.76 / 0.93 / 0.71.
+
+**P4 no fitting label, with a "none" option**: GLiClass 100%, Jev 95%, NLI 94%, GLiNER-1B 92%, Gemini 87%, Luna 86%, Qwen 67%, Haiku 65%, GLiNER 25%, Laya 13%.
+
+**Post hoc block (Eikos-4B, SemIf, Kev-0.8B)**: runs complete; analysis pending. Kev-4B dropped (hardware), see protocol changelog.
