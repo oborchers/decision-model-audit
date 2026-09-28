@@ -278,6 +278,7 @@ def analyse_p4(raw):
     items = items_of("data/probes/p4_no_fit.main.jsonl")
     out = {}
     g = group(load_rows(raw, "p4"))
+    s1 = group(load_rows(raw, "s1"))
     for s in sorted({k[0] for k in g}):
         forced = [r for r in g.get((s, "choice"), []) if r["item_id"] in items and r["valid"]]
         wn = [r for r in g.get((s, "choice_none"), []) if r["item_id"] in items]
@@ -287,6 +288,11 @@ def analyse_p4(raw):
                   "forced_share_conf_ge_0.9": round(float(np.mean(conf >= 0.9)), 4) if len(conf) else None,
                   "with_none_n": len(wn), "chose_none": round(k / len(wn), 4) if wn else None,
                   "chose_none_ci95": [round(x, 4) for x in wilson(k, len(wn))] if wn else None}
+        inset = s1.get((s, "choice_none"), [])
+        if inset:  # wrong "none" on S1 items where a label fits; P4 detection is uninterpretable without it
+            fn = sum(r["valid"] and r["pred"] == "none" for r in inset)
+            out[s]["s1_false_none"] = round(fn / len(inset), 4)
+            out[s]["s1_false_none_ci95"] = [round(x, 4) for x in wilson(fn, len(inset))]
     return out
 
 
