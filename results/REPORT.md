@@ -5,7 +5,7 @@ Status: complete for the pre-registered design (protocol v1 with changelog) plus
 ## Summary
 
 1. **On fresh data, Jev 1.13 cannot be distinguished from small general LLMs with structured output at this sample size.** On 400 arXiv papers from September 2026, Jev reaches 86.3%; GPT-6 Luna 88.8%, Gemini 3.5 Flash-Lite 88.0%, Claude Haiku 4.5 87.3%, Claude Sonnet 5 89.8%. All four LLM point estimates are above Jev (+1.0 to +3.5 points); none of the differences is significant after Holm correction (Sonnet: +3.5 [+0.8, +6.5] unadjusted, p_holm 0.12). This is not evidence of equivalence.
-2. **Jev is clearly ahead of every open zero-shot or decision model in the configuration tested here**, by 5.8 points (Eikos-4B, post hoc) to 42.8 points (Laya). GLiNER2.5-Decide trails by 12.8 points. Results depend on each model's interface and prompt: the same Qwen3.5-4B scores 53.2% with our option-letter readout and 77.5% with SemIf's vendor prompt. For the configurations that fit on a 16 GB laptop, the claim that open models have caught up does not hold on this data.
+2. **Jev is clearly ahead of every open zero-shot or decision model in the configuration tested here**, by 5.8 points (Eikos-4B, post hoc) to 42.8 points (Laya). GLiNER2.5-Decide trails by 12.8 points. Results depend on each model's interface and prompt: the same Qwen3.5-4B scores 53.3% with our option-letter readout and 77.5% with SemIf's vendor prompt. For the configurations that fit on a 16 GB laptop, the claim that open models have caught up does not hold on this data.
 3. **Supervised baselines trained on 2024 arXiv labels come close or match.** TF-IDF + logistic regression reaches 82.0% (83.0% with class weighting); logistic regression on Qwen3-Embedding-8B embeddings reaches 86.3%, equal to Jev, with better calibration (ECE 0.029 vs 0.068), the lowest AURC of all systems and about a twelfth of the cost (post hoc). The condition is labelled data.
 4. **Jev's advantages are real but narrower than marketed:** cheapest per decision (USD 0.035 per 1,000 vs 0.065 for GPT-6 Luna, 0.89 for Haiku), fastest API (p50 0.47 s vs 0.77 to 2.14 s), stable to label order and wording (97 to 99% identical answers), good at "none of these" (95% detected, 1% false). It is 1.6 to 4.5 times faster than small LLMs, not 200 times, and about 2 times cheaper than the cheapest small LLM.
 5. **Jev's probabilities are fragile.** 51.5% of its choice confidences are exactly 1.0, so the most confident half cannot be ranked. Asking the same decision as one yes/no question per label raises its ECE from 0.068 to 0.251; the yes-probabilities over all labels sum to a median of 1.25.
@@ -47,9 +47,9 @@ All systems receive the same label names and descriptions, but each through its 
 | TF-IDF + LR (2024 labels, 117 to 400 per class) | 82.0% [77.9, 85.5] | −4.3 [−8.3, −0.3] | 0.23 | 11.6% | 0.071 | 0.083 | local |
 | GLiNER2.5-Decide | 73.5% [69.0, 77.6] | −12.8 | <0.001 | 21.6% | 0.117 | 0.088 | local |
 | GLiNER2.5-Decide-1B | 69.8% [65.1, 74.1] | −16.5 | <0.001 | 25.9% | 0.182 | 0.152 | local |
-| DeBERTa-v3 NLI | 66.7% [62.0, 71.2] | −19.5 | <0.001 | 26.9% | 0.159 | 0.085 | local |
-| GLiClass v3 | 64.2% [59.4, 68.8] | −22.0 | <0.001 | 26.9% | 0.178 | 0.074 | local |
-| Qwen3.5-4B letter logprobs | 53.2% [48.4, 58.1] | −33.0 | <0.001 | 39.1% | 0.266 | 0.108 | local |
+| DeBERTa-v3 NLI | 66.8% [62.0, 71.2] | −19.5 | <0.001 | 26.9% | 0.159 | 0.085 | local |
+| GLiClass v3 | 64.3% [59.4, 68.8] | −22.0 | <0.001 | 26.9% | 0.178 | 0.074 | local |
+| Qwen3.5-4B letter logprobs | 53.3% [48.4, 58.1] | −33.0 | <0.001 | 39.1% | 0.266 | 0.108 | local |
 | Laya | 43.5% [38.7, 48.4] | −42.8 | <0.001 | 50.0% | 0.343 | 0.109 | local |
 
 Figures: `figures/s1_risk_coverage.png`, `figures/s1_reliability.png`, `figures/s1_cost_accuracy.png`.
@@ -142,7 +142,7 @@ Ceiling for API systems (99.2 to 99.7%, no significant differences). Local syste
 | SemIf 4B | 77.5% [73.2, 81.3] | −8.8 [−12.5, −5.3] | <0.001 | 17.2% |
 | Kev-0.8B | 64.5% [59.7, 69.0] | −21.8 [−26.8, −17.0] | <0.001 | 29.4% |
 
-SemIf uses the same Qwen3.5-4B base as our letter-logprob run and reaches 77.5% instead of 53.2%: reading an LLM as a classifier depends strongly on the prompt. Kev-4B was dropped (about 50 s per item on the laptop); 27B models and Shisa DE-1 were out of scope.
+SemIf uses the same Qwen3.5-4B base as our letter-logprob run and reaches 77.5% instead of 53.3%: reading an LLM as a classifier depends strongly on the prompt. Kev-4B was dropped (about 50 s per item on the laptop); 27B models and Shisa DE-1 were out of scope.
 
 ### Post hoc: closing three gaps (stability of LLMs, batching, repeatability)
 

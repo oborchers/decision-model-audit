@@ -122,4 +122,4 @@ Qwen3-Embedding-8B + LR (balanced), mean over 10 draws: 40 labels 73.7%, 80 79.0
 
 ## 2026-09-28, rounding correction
 
-Earlier entries in this log and the first REPORT.md version rounded GPT-6 Luna's S1 accuracy (0.8875) to 88.7% and Claude Sonnet 5's (0.8975) to 89.7%. Rounded half up these are 88.8% and 89.8%, as in `summary.json`-based figures. REPORT.md is corrected; the historical entries above are left as written.
+Earlier entries in this log and the first REPORT.md version rounded GPT-6 Luna's S1 accuracy (0.8875) to 88.7% and Claude Sonnet 5's (0.8975) to 89.7%. Rounded half up these are 88.8% and 89.8%, as in `summary.json`-based figures. REPORT.md is corrected; the historical entries above are left as written. The same applies to DeBERTa NLI (0.6675 → 66.8%), GLiClass (0.6425 → 64.3%) and Qwen letter logprobs (0.5325 → 53.3%).
