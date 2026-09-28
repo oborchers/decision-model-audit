@@ -112,3 +112,12 @@ OpenRouter reports cost per request; local latency is measured on an Apple M1 Pr
   - **Eikos-4B on P3:** the 24,000-token items fail with `metal::malloc` requests of about 20 GB (whole-prompt processing exceeds 16 GB unified memory). Recorded as invalid; a hardware limit, not a model error.
   - **Kev-0.8B on P3:** 13 of the longest items fail with `metal::malloc` requests of about 9.6 GB (single-buffer limit of the M1 Pro). Recorded as invalid; hardware limit.
   - **Gap fixed post hoc: false "none" rate for API LLMs.** P4 measures how often a system picks "none" when nothing fits; without the rate of wrong "none" answers on items where a label fits, this is uninterpretable (GLiClass picks "none" for 99.75% of S1 items). The pre-registered design ran `choice_none` on S1 only for Jev and local systems. Luna, Gemini and Haiku are now run with `choice_none` on S1 (about USD 0.47); Sonnet is omitted for cost. Reported in the post hoc block.
+- 2026-09-28 (after the results review by Codex; corrections of unlogged deviations):
+  - **Brier score is top-label**, not multiclass: LLMs return one verbalized confidence only, so a full distribution exists for decision models but not for LLMs; top-label Brier is used for every system for comparability.
+  - **Bootstrap resamples:** interim analyses used 2,000 to 5,000 resamples; the final analysis uses 10,000 for paired accuracy and error-at-80% differences as pre-registered, 2,000 for ECE intervals.
+  - **ECE with ties:** the first implementation split tied confidences across bins by row order (Jev: 206 of 400 values exactly 1.0). Replaced by an order-independent version that splits tied blocks fractionally across equal-mass bins.
+  - **Holm families:** the interim analysis corrected choice and rationale comparisons together. Final: three families, pre-registered systems (choice), rationale variants, post hoc systems.
+  - **P1 template:** the "fair die" template was implemented as a fair wheel with k of n green sectors (same structure, allows n = 10 to 1,000).
+  - **TF-IDF training set:** not 400 per class. Harvested 2024 arXiv volume gives {'cs.CL': 400, 'cs.CR': 400, 'cs.CV': 400, 'cs.DB': 117, 'cs.DC': 289, 'cs.HC': 400, 'cs.RO': 400, 'cs.SE': 400} (2806 items); logistic regression uses these counts.
+  - **Unambiguous S1 subset** results are computed in `summary.json` and now reported.
+  - **Majority vote** (exploratory bounds) breaks ties by system order; the bounds analysis is indicative, not a measured ceiling.

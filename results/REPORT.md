@@ -4,12 +4,12 @@ Status: complete for the pre-registered design (protocol v1 with changelog) plus
 
 ## Summary
 
-1. **On fresh data, Jev 1.13 is as accurate as small general LLMs with structured output.** On 400 arXiv papers submitted after every disclosed training cutoff, Jev reaches 86.3%; GPT-6 Luna 88.7%, Gemini 3.5 Flash-Lite 88.0%, Claude Haiku 4.5 87.3%, Claude Sonnet 5 89.7%. No difference is significant after Holm correction.
-2. **Jev is clearly ahead of every open zero-shot or decision model tested**, by 5.8 points (Eikos-4B, post hoc) to 42.8 points (Laya). GLiNER2.5-Decide trails by 12.8 points. The claim that open models have caught up does not hold on this data for models that fit on a 16 GB laptop.
+1. **On fresh data, Jev 1.13 cannot be distinguished from small general LLMs with structured output at this sample size.** On 400 arXiv papers from September 2026, Jev reaches 86.3%; GPT-6 Luna 88.7%, Gemini 3.5 Flash-Lite 88.0%, Claude Haiku 4.5 87.3%, Claude Sonnet 5 89.7%. All four LLM point estimates are above Jev (+1.0 to +3.5 points); none of the differences is significant after Holm correction (Sonnet: +3.5 [+0.8, +6.5] unadjusted, p_holm 0.12). This is not evidence of equivalence.
+2. **Jev is clearly ahead of every open zero-shot or decision model in the configuration tested here**, by 5.8 points (Eikos-4B, post hoc) to 42.8 points (Laya). GLiNER2.5-Decide trails by 12.8 points. Results depend on each model's interface and prompt: the same Qwen3.5-4B scores 53.2% with our option-letter readout and 77.5% with SemIf's vendor prompt. For the configurations that fit on a 16 GB laptop, the claim that open models have caught up does not hold on this data.
 3. **A supervised TF-IDF + logistic regression model trained on 2024 arXiv labels reaches 82.0%**, 4.3 points below Jev and not significant after correction. Old technique, milliseconds, no API, but it needs labelled data.
 4. **Jev's advantages are real but narrower than marketed:** cheapest per decision (USD 0.035 per 1,000 vs 0.065 for GPT-6 Luna, 0.89 for Haiku), fastest API (p50 0.47 s vs 0.77 to 2.14 s), stable to label order and wording (97 to 99% identical answers), good at "none of these" (95% detected, 1% false). It is 1.6 to 4.5 times faster than small LLMs, not 200 times, and about 2 times cheaper than the cheapest small LLM.
-5. **Jev's probabilities are fragile.** 51.5% of its choice confidences are exactly 1.0, so the most confident half cannot be ranked. Asking the same decision as one yes/no question per label raises its ECE from 0.064 to 0.251; the yes-probabilities over all labels sum to a median of 1.25.
-6. **A rationale costs accuracy.** Writing a rationale before the label lowers accuracy by 4.5 to 7 points for all three LLMs and raises cost 1.5 to 1.8 times. Luna and Gemini quote the input verbatim in 92 to 97% of their quotations; Haiku rarely quotes.
+5. **Jev's probabilities are fragile.** 51.5% of its choice confidences are exactly 1.0, so the most confident half cannot be ranked. Asking the same decision as one yes/no question per label raises its ECE from 0.068 to 0.251; the yes-probabilities over all labels sum to a median of 1.25.
+6. **The rationale-first prompt costs accuracy.** In this prompt condition (rationale field first, instruction to quote the input) accuracy drops by 4.5 to 7 points for all three LLMs and cost rises 1.5 to 1.8 times. This measures that prompt condition, not rationales in general. Luna and Gemini quote the input verbatim in 92 to 97% of their quotations; Haiku rarely quotes.
 7. **Fixed-window encoders lose information in long inputs**; Jev and Luna found a single decisive sentence at every length up to 24,000 tokens.
 
 ## Setup
@@ -31,7 +31,7 @@ Descriptive statistics and quality checks: `results/data_quality.json` (no dupli
 
 Pre-registered: Jev 1.13 (OpenRouter), GPT-6 Luna, Gemini 3.5 Flash-Lite, Claude Haiku 4.5, Claude Sonnet 5 (S1 only), GLiNER2.5-Decide and -1B, Laya, DeBERTa-v3 NLI zero-shot, GLiClass v3, Qwen3.5-4B read through option-letter logprobs, TF-IDF + logistic regression trained on 2024 arXiv. Post hoc (after the LangWatch comparison): Eikos-4B, SemIf 4B, Kev-0.8B. Exact model IDs and revisions: `notes/local-models.md`.
 
-All systems receive the same label names and descriptions. LLMs use structured output with a label enum and a verbalized confidence; decision models return their own probabilities.
+All systems receive the same label names and descriptions, but each through its own interface: LLMs via structured output with a label enum and a verbalized confidence; Jev and the decision models via their typed choice APIs; DeBERTa NLI as entailment hypotheses ("This text is about {description}."); Qwen letter logprobs via lettered options. GLiNER's parenthesis rewrite did not trigger (no parentheses in any label set).
 
 ## Results
 
@@ -39,12 +39,12 @@ All systems receive the same label names and descriptions. LLMs use structured o
 
 | System | Accuracy [95% CI] | Δ vs Jev [95% CI] | Holm p | Error at 80% coverage | AURC | ECE | USD / 1,000 |
 |---|---|---|---|---|---|---|---|
-| Claude Sonnet 5 | 89.7% [86.4, 92.4] | +3.5 [+0.8, +6.5] | 0.17 | 6.8% | 0.051 | 0.079 | 2.480 |
-| GPT-6 Luna | 88.7% [85.3, 91.5] | +2.5 [−0.5, +5.5] | 0.57 | 8.5% | 0.074 | 0.055 | 0.065 |
-| Gemini 3.5 Flash-Lite | 88.0% [84.5, 90.8] | +1.8 [−1.0, +4.5] | 0.62 | 10.0% | 0.067 | 0.062 | 0.205 |
-| Claude Haiku 4.5 | 87.3% [83.6, 90.2] | +1.0 [−1.8, +3.5] | 0.62 | 10.3% | 0.077 | 0.063 | 0.888 |
-| **Jev 1.13** | **86.3% [82.5, 89.3]** | | | **8.6%** | 0.067 | 0.064 | **0.035** |
-| TF-IDF + LR (2024 labels) | 82.0% [77.9, 85.5] | −4.3 [−8.3, −0.3] | 0.34 | 11.6% | 0.071 | 0.083 | local |
+| Claude Sonnet 5 | 89.7% [86.4, 92.4] | +3.5 [+0.8, +6.5] | 0.12 | 6.8% | 0.051 | 0.064 | 2.480 |
+| GPT-6 Luna | 88.7% [85.3, 91.5] | +2.5 [−0.5, +5.5] | 0.43 | 8.5% | 0.074 | 0.055 | 0.065 |
+| Gemini 3.5 Flash-Lite | 88.0% [84.5, 90.8] | +1.8 [−1.0, +4.8] | 0.62 | 10.0% | 0.067 | 0.062 | 0.205 |
+| Claude Haiku 4.5 | 87.3% [83.6, 90.2] | +1.0 [−1.5, +3.5] | 0.62 | 10.3% | 0.077 | 0.062 | 0.888 |
+| **Jev 1.13** | **86.3% [82.5, 89.3]** | | | **8.6%** | 0.067 | 0.068 | **0.035** |
+| TF-IDF + LR (2024 labels, 117 to 400 per class) | 82.0% [77.9, 85.5] | −4.3 [−8.3, −0.3] | 0.23 | 11.6% | 0.071 | 0.083 | local |
 | GLiNER2.5-Decide | 73.5% [69.0, 77.6] | −12.8 | <0.001 | 21.6% | 0.117 | 0.088 | local |
 | GLiNER2.5-Decide-1B | 69.8% [65.1, 74.1] | −16.5 | <0.001 | 25.9% | 0.182 | 0.152 | local |
 | DeBERTa-v3 NLI | 66.7% [62.0, 71.2] | −19.5 | <0.001 | 26.9% | 0.159 | 0.085 | local |
@@ -54,7 +54,9 @@ All systems receive the same label names and descriptions. LLMs use structured o
 
 Figures: `figures/s1_risk_coverage.png`, `figures/s1_reliability.png`, `figures/s1_cost_accuracy.png`.
 
-Jev's risk–coverage curve is flat up to about 60% coverage because 51.5% of its confidences are exactly 1.0; the expected error inside that block is constant under random tie-breaking.
+Jev's risk–coverage curve is flat up to 51.5% coverage because 51.5% of its confidences are exactly 1.0; the expected error inside that block is constant under random tie-breaking.
+
+**Unambiguous subset** (349 papers not cross-listed within the label set): Sonnet 91.4%, Luna 90.8%, Gemini 89.4%, Haiku 88.8%, Jev 87.7%, TF-IDF 84.2%, Eikos 82.5% (post hoc), SemIf 79.7% (post hoc), GLiNER 74.2%, GLiNER-1B 71.6%, NLI 68.8%, Kev-0.8B 67.1% (post hoc), GLiClass 65.6%, Qwen 54.7%, Laya 42.7%. The ordering is unchanged.
 
 ### Stability to wording and question form (S1, agreement with the system's own choice run)
 
@@ -69,15 +71,17 @@ Jev's risk–coverage curve is flat up to about 60% coverage because 51.5% of it
 | GLiNER-1B | | | | 50.0% |
 | Laya | | | | 43.5% |
 
-Accuracy under paraphrase moves by up to 12 points for open models (e.g. GLiNER 73.5% → 60.3% with names only, NLI 66.8% → 50.3%); Jev stays between 85.3% and 88.0%. The question form mainly changes Jev's calibration: ECE 0.064 (choice) vs 0.251 (yes/no).
+Accuracy under paraphrase moves by up to 16.5 points for open models (e.g. GLiNER 73.5% → 60.3% with names only, NLI 66.8% → 50.3%); Jev stays between 85.3% and 88.0%. The question form mainly changes Jev's calibration: ECE 0.068 (choice) vs 0.251 (yes/no).
 
 ### Rationale before the label (S1)
 
-| System | Accuracy label only → with rationale | Cost ratio | Output tokens | Quotations: items with one / verbatim |
-|---|---|---|---|---|
-| GPT-6 Luna | 88.7% → 81.8% | ×1.47 | 19 → 74 | 99% / 97% |
-| Gemini 3.5 Flash-Lite | 88.0% → 83.5% | ×1.83 | 22 → 87 | 98% / 92% |
-| Claude Haiku 4.5 | 87.3% → 82.8% | ×1.62 | 19 → 119 | 16% / 76% |
+| System | Accuracy label only → with rationale | Paired Δ [95% CI] | Holm p | Cost ratio | Output tokens | Quotations: items with one / verbatim |
+|---|---|---|---|---|---|---|
+| GPT-6 Luna | 88.7% → 81.8% | −7.0 [−10.8, −3.5] | 0.001 | ×1.47 | 19 → 74 | 99% / 97% |
+| Gemini 3.5 Flash-Lite | 88.0% → 83.5% | −4.5 [−7.8, −1.5] | 0.016 | ×1.83 | 22 → 87 | 98% / 92% |
+| Claude Haiku 4.5 | 87.3% → 82.8% | −4.5 [−7.8, −1.3] | 0.016 | ×1.62 | 19 → 119 | 16% / 76% |
+
+Paired within each system (same items, label only vs rationale first), exact McNemar with Holm correction across the three systems. The rationale run also raised the output cap from 150 to 600 tokens; no rationale run was truncated at that cap, so the cap does not explain the drop.
 
 A rationale is a review aid, not proof of the decision path; the pilot review found fluent rationales for wrong labels. Its usefulness to a human reviewer was not measured.
 
@@ -142,7 +146,7 @@ SemIf uses the same Qwen3.5-4B base as our letter-logprob run and reaches 77.5% 
 
 ### Bounds on attainable accuracy (S1, exploratory)
 
-At least one of the five API systems is right on 95.5% of papers; all five are wrong on 4.5%, and on 16 of those 18 they agree on the same other category. Majority vote reaches 90.0%. Excluding the 16 consensus items: Jev 89.8%, Luna 92.5%, Gemini 91.7%, Haiku 90.9%, Sonnet 93.5%, TF-IDF 84.1%, Eikos 83.9%. The practical ceiling is below 100% because the label is the author's choice among overlapping categories.
+At least one of the five API systems is right on 95.5% of papers; all five are wrong on 4.5%, and on 16 of those 18 they agree on the same other category. Majority vote reaches 90.0% (2 items with a 2–2 tie, broken by system order; the alternative rule gives 90.25%). Excluding the 16 consensus items: Jev 89.8%, Luna 92.5%, Gemini 91.7%, Haiku 90.9%, Sonnet 93.5%, TF-IDF 84.1%, Eikos 83.9%. This suggests, but does not measure, a practical ceiling below 100%: the label is the author's choice among overlapping categories, and the 16 consensus items were not independently adjudicated.
 
 ### Cost and latency
 

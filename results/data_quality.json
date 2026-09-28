@@ -37,25 +37,25 @@
  },
  "s1_train_2024": {
   "n": {
-   "train_2024.jsonl": 1698
+   "train_2024.jsonl": 2806
   },
   "words": {
-   "mean": 181.0,
-   "median": 180.0,
-   "p5": 100.0,
-   "p95": 261.14999999999986,
-   "min": 58,
-   "max": 390
+   "mean": 185.9,
+   "median": 184.0,
+   "p5": 107.0,
+   "p95": 267.0,
+   "min": 56,
+   "max": 316
   },
   "labels": {
    "cs.CV": 400,
-   "cs.RO": 266,
    "cs.CL": 400,
-   "cs.CR": 176,
-   "cs.SE": 115,
-   "cs.DB": 31,
-   "cs.HC": 237,
-   "cs.DC": 73
+   "cs.SE": 400,
+   "cs.CR": 400,
+   "cs.RO": 400,
+   "cs.DB": 117,
+   "cs.HC": 400,
+   "cs.DC": 289
   },
   "exact_duplicate_texts": 0,
   "near_duplicate_items_cos>=0.9": 0,

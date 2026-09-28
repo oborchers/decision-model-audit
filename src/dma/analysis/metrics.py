@@ -33,14 +33,31 @@ def macro_f1(gold: list, pred: list, labels: list) -> float:
 
 
 def ece_equal_mass(conf: np.ndarray, correct: np.ndarray, bins: int = 10) -> float:
-    """Expected calibration error with equal-mass bins (ties kept together by stable sort)."""
-    order = np.argsort(conf, kind="stable")
-    c, y = conf[order], correct[order]
-    total = 0.0
-    for idx in np.array_split(np.arange(len(c)), bins):
-        if len(idx):
-            total += len(idx) * abs(c[idx].mean() - y[idx].mean())
-    return total / len(c)
+    """Expected calibration error with equal-mass bins, independent of row order.
+
+    Items are ordered by confidence; a block of tied confidences that straddles a bin boundary is
+    split fractionally (each tied item contributes its share of weight to each bin it overlaps),
+    so the result does not depend on the arbitrary order of tied items.
+    """
+    conf = np.asarray(conf, dtype=float)
+    correct = np.asarray(correct, dtype=float)
+    n = len(conf)
+    levels = np.unique(conf)
+    edges = np.linspace(0, n, bins + 1)
+    w = np.zeros(bins); sc = np.zeros(bins); sy = np.zeros(bins)
+    start = 0.0
+    for lv in levels:
+        m = conf == lv
+        cnt = m.sum()
+        ybar = correct[m].mean()
+        lo, hi = start, start + cnt
+        for b in range(bins):
+            ov = max(0.0, min(hi, edges[b + 1]) - max(lo, edges[b]))
+            if ov > 0:
+                w[b] += ov; sc[b] += ov * lv; sy[b] += ov * ybar
+        start = hi
+    nz = w > 0
+    return float(np.sum(np.abs(sc[nz] / w[nz] - sy[nz] / w[nz]) * w[nz]) / n)
 
 
 def brier_top(conf: np.ndarray, correct: np.ndarray) -> float:

@@ -94,10 +94,10 @@ def paired_vs(ref: dict, other: dict) -> dict:
     cb = np.array([other[i][1] for i in ids])
     mc = mcnemar_exact(a, b)
     d_acc = float(b.mean() - a.mean())
-    ci = bootstrap_ci(lambda x, y: y.mean() - x.mean(), a.astype(float), b.astype(float), n=5000)
+    ci = bootstrap_ci(lambda x, y: y.mean() - x.mean(), a.astype(float), b.astype(float), n=10000)
     r80 = lambda c1, y1, c2, y2: risk_at_coverage(c2, y2, .8) - risk_at_coverage(c1, y1, .8)
     d_r80 = r80(ca, a.astype(float), cb, b.astype(float))
-    ci_r80 = bootstrap_ci(r80, ca, a.astype(float), cb, b.astype(float), n=2000)
+    ci_r80 = bootstrap_ci(r80, ca, a.astype(float), cb, b.astype(float), n=10000)
     return {"n_paired": len(ids), "delta_acc_vs_jev": round(d_acc, 4), "delta_acc_ci95": [round(x, 4) for x in ci],
             "delta_risk80_vs_jev": round(d_r80, 4), "delta_risk80_ci95": [round(x, 4) for x in ci_r80],
             "mcnemar": mc}
@@ -129,9 +129,10 @@ def analyse_choice_source(name, raw, task_path, items_path, ambiguous_key=None):
                 continue
             comps[f"{s}/{v}"] = paired_vs(ref, pi)
             pv[f"{s}/{v}"] = comps[f"{s}/{v}"]["mcnemar"]["p"]
-        pre = {k: p for k, p in pv.items() if k.split("/")[0] not in EXTRA}
+        pre = {k: p for k, p in pv.items() if k.split("/")[0] not in EXTRA and k.endswith("/choice")}
+        rat = {k: p for k, p in pv.items() if k.endswith("/rationale")}
         post = {k: p for k, p in pv.items() if k.split("/")[0] in EXTRA}
-        for fam, pvals in (("pre-registered", pre), ("post hoc", post)):
+        for fam, pvals in (("pre-registered systems", pre), ("rationale variants", rat), ("post hoc", post)):
             for k, p in holm(pvals).items():
                 comps[k]["mcnemar"]["p_holm"] = round(p, 5)
                 comps[k]["holm_family"] = fam
@@ -178,6 +179,21 @@ def analyse_choice_source(name, raw, task_path, items_path, ambiguous_key=None):
         rat[s]["quotes_total"] = total
         rat[s]["quote_fidelity"] = round(found / total, 4) if total else None
         rat[s]["items_with_quote"] = round(np.mean([bool(qre.search(r.get("reasoning") or "")) for r in g[(s, "rationale")]]), 4)
+    # Q6: paired within-system test, rationale vs label only (Holm across the rationale systems)
+    pv6 = {}
+    for s in list(rat):
+        a = {r["item_id"]: r["valid"] and r["pred"] == r["gold"] for r in g[(s, "choice")]}
+        b = {r["item_id"]: r["valid"] and r["pred"] == r["gold"] for r in g[(s, "rationale")]}
+        ids = sorted(set(a) & set(b))
+        x = np.array([a[i] for i in ids]); y = np.array([b[i] for i in ids])
+        mc = mcnemar_exact(x, y)
+        ci = bootstrap_ci(lambda u, v: v.mean() - u.mean(), x.astype(float), y.astype(float), n=10000)
+        rat[s]["delta_acc_rationale_vs_label"] = round(float(y.mean() - x.mean()), 4)
+        rat[s]["delta_ci95"] = [round(c, 4) for c in ci]
+        rat[s]["mcnemar"] = mc
+        pv6[s] = mc["p"]
+    for s, p in holm(pv6).items():
+        rat[s]["mcnemar"]["p_holm"] = round(p, 5)
     res["_rationale"] = rat
     # exploratory: exclude items where all API LLM choice runs agree on the same non-gold label
     llm = [k for k in g if k[1] == "choice" and k[0] in ("luna", "flash", "haiku", "sonnet")]
@@ -202,7 +218,15 @@ def analyse_choice_source(name, raw, task_path, items_path, ambiguous_key=None):
             for r in g[k]:
                 corr[r["item_id"]][k[0]] = (r["pred"] == r["gold"], r["pred"])
         full = {i: c for i, c in corr.items() if len(c) == len(systems)}
-        votes = [max(set(p for _, p in c.values()), key=[p for _, p in c.values()].count) for c in full.values()]
+        # majority vote; ties broken by the order of `systems` (first system's label among the tied labels wins)
+        def vote(c):
+            labs = [c[k[0]][1] for k in systems]
+            best = max(labs.count(l) for l in labs)
+            return next(l for l in labs if labs.count(l) == best)
+        votes = [vote(c) for c in full.values()]
+        n_ties = sum(1 for c in full.values()
+                     if sorted([ [p for _, p in c.values()].count(l) for l in set(p for _, p in c.values())])[-2:] in ([2, 2],)
+                     )
         golds = [gold[i] for i in full]
         res["_exploratory_bounds"] = {
             "systems": [k[0] for k in systems], "n": len(full),
@@ -210,7 +234,9 @@ def analyse_choice_source(name, raw, task_path, items_path, ambiguous_key=None):
             "all_wrong": round(np.mean([not any(x for x, _ in c.values()) for c in full.values()]), 4),
             "all_wrong_same_label": len(drop) if len(systems) == len(llm) else sum(
                 1 for c in full.values() if not any(x for x, _ in c.values()) and len({p for _, p in c.values()}) == 1),
-            "majority_vote_accuracy": round(np.mean([v == gd for v, gd in zip(votes, golds)]), 4)}
+            "majority_vote_accuracy": round(np.mean([v == gd for v, gd in zip(votes, golds)]), 4),
+            "majority_vote_ties_2_2": n_ties, "tie_rule": "first system in order luna, flash, haiku, sonnet, jev",
+            "note": "indicative only; not a measured ceiling (no independent adjudication)"}
     return res
 
 

@@ -101,3 +101,9 @@ From `results/summary.json` (commit d35e0a1). Paired against Jev (choice) with H
 **Spend reconciled**: every OpenRouter request is in the cache; cached costs plus the uncached latency run sum to USD 4.263 against USD 4.249 account usage since project start. Remaining balance USD 1.55.
 
 **Figures**: `results/figures/` (risk–coverage, reliability, cost against accuracy, long input).
+
+## 2026-09-28, results review by Codex and corrections
+
+An independent review (`results/review-codex.md`) recomputed five headline numbers from raw rows (all reproduced) and found no bug in Wilson, McNemar, Holm, bootstrap or risk at coverage. Corrections applied: wording changed from "as accurate as" to "not distinguishable at this sample size" (all LLM point estimates are above Jev); open-model results qualified by tested interface; accuracy ceiling reworded as indicative; ECE made independent of row order (Jev 0.064 → 0.068); 10,000 bootstrap resamples; Holm families separated (pre-registered systems, rationale variants, post hoc); unlogged deviations recorded in the protocol changelog; unambiguous-subset results added (ordering unchanged).
+
+**Rationale-first prompt, paired within each system:** Luna −7.0 points [−10.8, −3.5], p_holm 0.001; Gemini −4.5 [−7.8, −1.5], p_holm 0.016; Haiku −4.5 [−7.8, −1.3], p_holm 0.016. No rationale output hit the 600-token cap.
