@@ -175,6 +175,20 @@ Same temporal split as the pre-registered TF-IDF baseline (train: 2,806 arXiv ab
 
 With about 2,800 labelled examples, an off-the-shelf embedding model plus logistic regression matches Jev's accuracy, is better calibrated, has the lowest AURC of all 23 systems, and costs about a twelfth per decision (embedding only; the classifier runs in microseconds). None of the accuracy or error-at-80% differences to Jev is significant. Class weighting adds 0.8 to 1 point. The balanced TF-IDF model chose the largest C in its grid (100); a wider grid might improve it slightly. The condition is labelled data: here it came free from arXiv; in practice it has to be collected.
 
+**Learning curve (post hoc, `results/learning_curve.json`, `figures/s1_learning_curve.png`).** Mean accuracy over 10 draws (about equal examples per class), logistic regression with class weighting:
+
+| Labelled examples (per class) | Qwen3-Embedding-8B + LR | OpenAI 3-large + LR | TF-IDF + LR |
+|---|---|---|---|
+| 40 (5) | 73.7% | 72.6% | 48.4% |
+| 80 (10) | 79.0% | 78.8% | 59.9% |
+| 160 (20) | 82.4% | 81.1% | 67.7% |
+| 400 (50) | 85.0% [83.8, 86.6] | 84.8% | 76.2% |
+| 800 (100) | 85.8% | 85.0% | 79.8% |
+| 1,600 | 85.5% | 85.1% | 82.0% |
+| 2,806 (all) | 86.3% | 85.3% | 83.0% |
+
+Reference, zero-shot: Jev 86.3% [82.5, 89.3], GPT-6 Luna 88.8%. With about 50 labelled examples per class the embedding classifier is within 1.3 points of Jev and already has a lower AURC (0.046 vs 0.067); with 20 per class it is at the lower end of Jev's confidence interval. TF-IDF needs roughly ten times as many labels. C was fixed at the value chosen by cross-validation on the full training set.
+
 ### Bounds on attainable accuracy (S1, exploratory)
 
 At least one of the five API systems is right on 95.5% of papers; all five are wrong on 4.5%, and on 16 of those 18 they agree on the same other category. Majority vote reaches 90.0% (2 items with a 2–2 tie, broken by system order; the alternative rule gives 90.25%). Excluding the 16 consensus items: Jev 89.8%, Luna 92.5%, Gemini 91.7%, Haiku 90.9%, Sonnet 93.5%, TF-IDF 84.1%, Eikos 83.9%. This suggests, but does not measure, a practical ceiling below 100%: the label is the author's choice among overlapping categories, and the 16 consensus items were not independently adjudicated.

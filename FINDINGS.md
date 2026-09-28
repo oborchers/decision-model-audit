@@ -115,3 +115,7 @@ Stability (agreement with own choice run, S1): Jev 97.5 to 99.0%, Luna 94.0 to 9
 ## 2026-09-28, supervised baselines with embeddings (post hoc)
 
 Same temporal split (train 2,806 arXiv abstracts from 2024, test S1). Qwen3-Embedding-8B + LR (balanced): 86.3% [82.5, 89.3], Δ vs Jev 0.0 [−3.3, +3.0], ECE 0.029, error at 80% coverage 7.2%, AURC 0.038 (lowest of all systems), AUROC "none fits" 0.925, USD 0.003 per 1,000 for embeddings. OpenAI text-embedding-3-large + LR: 85.3%, ECE 0.038, AURC 0.042, USD 0.037. TF-IDF + LR balanced: 83.0%. Class weighting adds 0.8 to 1 point. None of the accuracy differences to Jev is significant.
+
+## 2026-09-28, learning curve (post hoc)
+
+Qwen3-Embedding-8B + LR (balanced), mean over 10 draws: 40 labels 73.7%, 80 79.0%, 160 82.4%, 400 85.0% [83.8, 86.6], 800 85.8%, all 2,806 86.3%. OpenAI 3-large tracks within about 1 point. TF-IDF: 48.4% at 40, 76.2% at 400, 83.0% at all. About 50 labelled examples per class bring the embedding classifier within 1.3 points of Jev (86.3%) with a lower AURC (0.046 vs 0.067).
