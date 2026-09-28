@@ -4,7 +4,7 @@ Status: complete for the pre-registered design (protocol v1 with changelog) plus
 
 ## Summary
 
-1. **On fresh data, Jev 1.13 cannot be distinguished from small general LLMs with structured output at this sample size.** On 400 arXiv papers from September 2026, Jev reaches 86.3%; GPT-6 Luna 88.7%, Gemini 3.5 Flash-Lite 88.0%, Claude Haiku 4.5 87.3%, Claude Sonnet 5 89.7%. All four LLM point estimates are above Jev (+1.0 to +3.5 points); none of the differences is significant after Holm correction (Sonnet: +3.5 [+0.8, +6.5] unadjusted, p_holm 0.12). This is not evidence of equivalence.
+1. **On fresh data, Jev 1.13 cannot be distinguished from small general LLMs with structured output at this sample size.** On 400 arXiv papers from September 2026, Jev reaches 86.3%; GPT-6 Luna 88.8%, Gemini 3.5 Flash-Lite 88.0%, Claude Haiku 4.5 87.3%, Claude Sonnet 5 89.8%. All four LLM point estimates are above Jev (+1.0 to +3.5 points); none of the differences is significant after Holm correction (Sonnet: +3.5 [+0.8, +6.5] unadjusted, p_holm 0.12). This is not evidence of equivalence.
 2. **Jev is clearly ahead of every open zero-shot or decision model in the configuration tested here**, by 5.8 points (Eikos-4B, post hoc) to 42.8 points (Laya). GLiNER2.5-Decide trails by 12.8 points. Results depend on each model's interface and prompt: the same Qwen3.5-4B scores 53.2% with our option-letter readout and 77.5% with SemIf's vendor prompt. For the configurations that fit on a 16 GB laptop, the claim that open models have caught up does not hold on this data.
 3. **Supervised baselines trained on 2024 arXiv labels come close or match.** TF-IDF + logistic regression reaches 82.0% (83.0% with class weighting); logistic regression on Qwen3-Embedding-8B embeddings reaches 86.3%, equal to Jev, with better calibration (ECE 0.029 vs 0.068), the lowest AURC of all systems and about a twelfth of the cost (post hoc). The condition is labelled data.
 4. **Jev's advantages are real but narrower than marketed:** cheapest per decision (USD 0.035 per 1,000 vs 0.065 for GPT-6 Luna, 0.89 for Haiku), fastest API (p50 0.47 s vs 0.77 to 2.14 s), stable to label order and wording (97 to 99% identical answers), good at "none of these" (95% detected, 1% false). It is 1.6 to 4.5 times faster than small LLMs, not 200 times, and about 2 times cheaper than the cheapest small LLM.
@@ -39,8 +39,8 @@ All systems receive the same label names and descriptions, but each through its 
 
 | System | Accuracy [95% CI] | Δ vs Jev [95% CI] | Holm p | Error at 80% coverage | AURC | ECE | USD / 1,000 |
 |---|---|---|---|---|---|---|---|
-| Claude Sonnet 5 | 89.7% [86.4, 92.4] | +3.5 [+0.8, +6.5] | 0.12 | 6.8% | 0.051 | 0.064 | 2.480 |
-| GPT-6 Luna | 88.7% [85.3, 91.5] | +2.5 [−0.5, +5.5] | 0.43 | 8.5% | 0.074 | 0.055 | 0.065 |
+| Claude Sonnet 5 | 89.8% [86.4, 92.4] | +3.5 [+0.8, +6.5] | 0.12 | 6.8% | 0.051 | 0.064 | 2.480 |
+| GPT-6 Luna | 88.8% [85.3, 91.5] | +2.5 [−0.5, +5.5] | 0.43 | 8.5% | 0.074 | 0.055 | 0.065 |
 | Gemini 3.5 Flash-Lite | 88.0% [84.5, 90.8] | +1.8 [−1.0, +4.8] | 0.62 | 10.0% | 0.067 | 0.062 | 0.205 |
 | Claude Haiku 4.5 | 87.3% [83.6, 90.2] | +1.0 [−1.5, +3.5] | 0.62 | 10.3% | 0.077 | 0.062 | 0.888 |
 | **Jev 1.13** | **86.3% [82.5, 89.3]** | | | **8.6%** | 0.067 | 0.068 | **0.035** |
@@ -77,7 +77,7 @@ Accuracy under paraphrase moves by up to 16.5 points for open models (e.g. GLiNE
 
 | System | Accuracy label only → with rationale | Paired Δ [95% CI] | Holm p | Cost ratio | Output tokens | Quotations: items with one / verbatim |
 |---|---|---|---|---|---|---|
-| GPT-6 Luna | 88.7% → 81.8% | −7.0 [−10.8, −3.5] | 0.001 | ×1.47 | 19 → 74 | 99% / 97% |
+| GPT-6 Luna | 88.8% → 81.8% | −7.0 [−10.8, −3.5] | 0.001 | ×1.47 | 19 → 74 | 99% / 97% |
 | Gemini 3.5 Flash-Lite | 88.0% → 83.5% | −4.5 [−7.8, −1.5] | 0.016 | ×1.83 | 22 → 87 | 98% / 92% |
 | Claude Haiku 4.5 | 87.3% → 82.8% | −4.5 [−7.8, −1.3] | 0.016 | ×1.62 | 19 → 119 | 16% / 76% |
 
