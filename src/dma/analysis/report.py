@@ -265,7 +265,7 @@ def analyse_p3(raw):
         out[s] = {"n": len(rows), "invalid": sum(not r["valid"] for r in rows),
                   "accuracy_by_length": {str(L): round(float(np.mean(v2)), 3) for L, v2 in sorted(by_len.items())},
                   "recall_by_length_position": pos_recall, "specificity_by_length": neg_spec,
-                  "errors": [r.get("error", {}).get("body", "")[:160] for r in rows if not r["valid"]][:3]}
+                  "errors": [(r["error"].get("body", "") if isinstance(r.get("error"), dict) else str(r.get("error", "")))[:160] for r in rows if not r["valid"]][:3]}
     return out
 
 
