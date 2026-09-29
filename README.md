@@ -2,7 +2,7 @@
 
 Reproducible comparison of "decision models" (zero-shot classifiers such as TypeSafe Jev, Fastino GLiNER2.5-Decide and Laya) against small LLMs with structured outputs.
 
-Status: work in progress. Findings are logged iteratively in [`FINDINGS.md`](FINDINGS.md), including negative and inconclusive results.
+Status: complete (September 2026 snapshot). The full results are in [`results/REPORT.md`](results/REPORT.md). The pre-registered protocol and every deviation from it are in [`notes/protocol.md`](notes/protocol.md). Findings were logged chronologically in [`FINDINGS.md`](FINDINGS.md), including negative and inconclusive results.
 
 ## Questions
 
@@ -29,4 +29,13 @@ notes/            method notes and decisions
 uv sync
 ```
 
-API keys are read from the environment at runtime and never committed.
+API calls go through OpenRouter. Set `OPENROUTER_API_KEY` in the environment, or set `DMA_KEY_FILE` to a dotenv file that contains it. Keys are never committed.
+
+Every API response is cached, so the analysis can be rerun from the committed raw outputs without any API access:
+
+```bash
+uv run python -m dma.analysis.report
+uv run python -m dma.analysis.figures
+```
+
+The run scripts in `scripts/` reproduce the model calls. Local models were run on an Apple M1 Pro with 16 GB of memory.

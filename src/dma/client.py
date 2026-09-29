@@ -18,7 +18,7 @@ from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[2]
 CACHE = ROOT / ".cache" / "openrouter"
-KEY_PATH = Path("~/.config/agent-os/openrouter.env").expanduser()
+KEY_FILE = os.environ.get("DMA_KEY_FILE")  # optional dotenv file holding OPENROUTER_API_KEY
 BASE = "https://openrouter.ai/api"
 
 _key: str | None = None
@@ -29,7 +29,9 @@ def _api_key() -> str:
     global _key
     with _key_lock:
         if _key is None:
-            _key = os.environ.get("OPENROUTER_API_KEY") or dotenv_values(KEY_PATH)["OPENROUTER_API_KEY"]
+            _key = os.environ.get("OPENROUTER_API_KEY") or (dotenv_values(KEY_FILE).get("OPENROUTER_API_KEY") if KEY_FILE else None)
+            if not _key:
+                raise RuntimeError("Set OPENROUTER_API_KEY, or DMA_KEY_FILE to a dotenv file that contains it.")
     return _key
 
 
