@@ -39,3 +39,7 @@ uv run python -m dma.analysis.figures
 ```
 
 The run scripts in `scripts/` reproduce the model calls. Local models were run on an Apple M1 Pro with 16 GB of memory.
+
+## License
+
+Code and analysis: MIT, see [`LICENSE`](LICENSE). Third-party code in `third_party/` keeps its own license. The evaluation data keeps the terms of its sources: arXiv metadata and Federal Register documents.
