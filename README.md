@@ -4,6 +4,8 @@ Reproducible comparison of "decision models" (zero-shot classifiers such as Type
 
 Status: complete (September 2026 snapshot). The full results are in [`results/REPORT.md`](results/REPORT.md). The pre-registered protocol and every deviation from it are in [`notes/protocol.md`](notes/protocol.md). Findings were logged chronologically in [`FINDINGS.md`](FINDINGS.md), including negative and inconclusive results.
 
+Write-up: [Ist Jev wirklich gut? Ein Feldtest auf frischen Daten](https://www.drborchers.com/blog/jev-feldtest/) (German) and [Is Jev Actually Any Good? A Field Test on Fresh Data](https://www.drborchers.com/en/blog/jev-field-test/) (English).
+
 ## Questions
 
 1. Accuracy and calibration of the returned probabilities
