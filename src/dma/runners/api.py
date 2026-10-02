@@ -9,7 +9,8 @@ import json
 import math
 from concurrent.futures import ThreadPoolExecutor
 
-from dma.client import chat, decisions
+from dma import cf_client
+from dma.client import chat, decisions as or_decisions
 from dma.tasks import Task, load_items, result_row, write_rows
 
 LLM = {
@@ -21,6 +22,13 @@ LLM = {
     "sonnet": ("anthropic/claude-sonnet-5", "Anthropic", {"reasoning": {"effort": "none"}}),
 }
 JEV_MODEL = "typesafe/jev-1.13"
+DECISION_SYSTEMS = ("jev", "clef", "clef-flash")  # Clef and Clef-flash (post hoc, 2026-10) via Workers AI
+
+
+def decisions(system: str, state, questions: dict) -> dict:
+    if system == "jev":
+        return or_decisions(JEV_MODEL, state, questions)
+    return cf_client.decisions(system, state, questions)
 
 
 def options_text(labels: dict[str, str]) -> str:
@@ -28,15 +36,15 @@ def options_text(labels: dict[str, str]) -> str:
 
 
 # ---------------- Jev ----------------
-def run_jev(task: Task, item: dict, variant: str) -> dict:
+def run_jev(task: Task, item: dict, variant: str, system: str = "jev") -> dict:
     if task.type == "noul" or variant == "noul":
         q = {"q": {"type": "noul", "instructions": item.get("question") or task.instructions}}
-        rec = decisions(JEV_MODEL, item["text"], q)
+        rec = decisions(system, item["text"], q)
         resp = rec["response"]
         if "error" in resp:
-            return result_row(item, "jev", variant, valid=False, extra={"error": resp["error"]})
+            return result_row(item, system, variant, valid=False, extra={"error": resp["error"]})
         p = resp["answers"]["q"]["noul"]
-        return result_row(item, "jev", "noul", pred=p >= 0.5, probs={"yes": p}, confidence=max(p, 1 - p),
+        return result_row(item, system, "noul", pred=p >= 0.5, probs={"yes": p}, confidence=max(p, 1 - p),
                           latency_s=None if rec["cached"] else rec["latency_s"], cost_usd=resp["usage"]["cost"],
                           extra={"gen_id": resp.get("id"), "usage": resp.get("usage"), "cached": rec["cached"]})
     if variant == "yesno":
@@ -44,24 +52,24 @@ def run_jev(task: Task, item: dict, variant: str) -> dict:
         keys = {f"l{i}": lab for i, lab in enumerate(labels)}
         qs = {k: {"type": "noul", "instructions": f"{task.instructions} Is the correct answer \"{lab}\" "
                                                   f"({labels[lab]})?"} for k, lab in keys.items()}
-        rec = decisions(JEV_MODEL, item["text"], qs)
+        rec = decisions(system, item["text"], qs)
         resp = rec["response"]
         if "error" in resp:
-            return result_row(item, "jev", variant, valid=False, extra={"error": resp["error"]})
+            return result_row(item, system, variant, valid=False, extra={"error": resp["error"]})
         probs = {keys[k]: resp["answers"][k]["noul"] for k in keys}
         pred = max(probs, key=probs.get)
         s = sum(probs.values()) or 1.0
-        return result_row(item, "jev", variant, pred=pred, probs=probs, confidence=probs[pred] / s,
+        return result_row(item, system, variant, pred=pred, probs=probs, confidence=probs[pred] / s,
                           latency_s=None if rec["cached"] else rec["latency_s"], cost_usd=resp["usage"]["cost"],
                           extra={"gen_id": resp.get("id"), "yes_sum": s, "cached": rec["cached"]})
     labels = task.label_map(variant)
     q = {"q": {"type": "choice", "instructions": task.instructions, "criteria": labels}}
-    rec = decisions(JEV_MODEL, item["text"], q)
+    rec = decisions(system, item["text"], q)
     resp = rec["response"]
     if "error" in resp:
-        return result_row(item, "jev", variant, valid=False, extra={"error": resp["error"]})
+        return result_row(item, system, variant, valid=False, extra={"error": resp["error"]})
     a = resp["answers"]["q"]
-    return result_row(item, "jev", variant, pred=a["choice"], probs=a["probabilities"], confidence=a["confidence"],
+    return result_row(item, system, variant, pred=a["choice"], probs=a["probabilities"], confidence=a["confidence"],
                       latency_s=None if rec["cached"] else rec["latency_s"], cost_usd=resp["usage"]["cost"],
                       extra={"gen_id": resp.get("id"), "usage": resp.get("usage"), "cached": rec["cached"]})
 
@@ -127,11 +135,11 @@ def run_batch(system: str, task: Task, items: list[dict], variant: str) -> list[
     are divided evenly across its items (recorded as cost_usd / latency_s per row, plus batch totals)."""
     labels = task.label_map("choice")
     k = len(items)
-    if system == "jev":
+    if system in DECISION_SYSTEMS:
         state = {"papers": {f"p{i}": it["text"] for i, it in enumerate(items)}}
         qs = {f"q{i}": {"type": "choice", "instructions": f"{task.instructions} The paper is `papers.p{i}`.",
                         "criteria": labels} for i in range(k)}
-        rec = decisions(JEV_MODEL, state, qs)
+        rec = decisions(system, state, qs)
         resp = rec["response"]
         if "error" in resp:
             return [result_row(it, system, variant, valid=False, extra={"error": resp["error"]}) for it in items]
@@ -201,7 +209,7 @@ def main() -> None:
         with ThreadPoolExecutor(a.workers) as ex:
             rows = [r for rs in ex.map(lambda ch: run_batch(a.system, task, ch, a.variant), chunks) for r in rs]
     else:
-        fn = (lambda it: run_jev(task, it, a.variant)) if a.system == "jev" else \
+        fn = (lambda it: run_jev(task, it, a.variant, a.system)) if a.system in DECISION_SYSTEMS else \
              (lambda it: run_llm(a.system, task, it, a.variant))
         with ThreadPoolExecutor(a.workers) as ex:
             rows = list(ex.map(fn, items))

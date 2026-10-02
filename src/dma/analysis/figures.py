@@ -25,7 +25,7 @@ NAMES = {"jev": "Jev 1.13", "luna": "GPT-6 Luna", "flash": "Gemini 3.5 Flash-Lit
          "sonnet": "Claude Sonnet 5", "tfidf": "TF-IDF + LR (2024 labels)", "gliner": "GLiNER2.5-Decide",
          "gliner-1b": "GLiNER2.5-Decide-1B", "nli": "DeBERTa-v3 NLI", "gliclass": "GLiClass v3", "qwen-lp": "Qwen3.5-4B logprobs",
          "laya": "Laya", "laya-long": "Laya long", "gliner-long": "GLiNER2.5 chunked", "eikos-4b": "Eikos-4B",
-         "semif-4b": "SemIf 4B", "kev-0.8b": "Kev-0.8B"}
+         "semif-4b": "SemIf 4B", "kev-0.8b": "Kev-0.8B", "clef": "Clef", "clef-flash": "Clef-flash"}
 
 
 def style(s):
