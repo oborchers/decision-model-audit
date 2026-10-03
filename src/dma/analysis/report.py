@@ -16,12 +16,13 @@ from dma.analysis.metrics import (aurc, bootstrap_ci, brier_top, ece_equal_mass,
 
 ROOT = Path(__file__).resolve().parents[3]
 SPLIT = "main"
-EXTRA = {"eikos-4b", "semif-4b", "kev-0.8b", "tfidf-bal", "emb-qwen3-8b", "emb-qwen3-8b-unbal", "emb-oai-3l", "emb-oai-3l-unbal"}  # post hoc systems: separate Holm family
+EXTRA = {"clef", "clef-flash", "eikos-4b", "semif-4b", "kev-0.8b", "tfidf-bal", "emb-qwen3-8b", "emb-qwen3-8b-unbal", "emb-oai-3l", "emb-oai-3l-unbal"}  # post hoc systems: separate Holm family
+CLEF = {"clef", "clef-flash"}  # added 2026-10-02 in their own Holm family, so earlier adjusted p values stay unchanged
 
 
 def load_rows(raw: Path, name: str) -> list[dict]:
     rows = []
-    for f in [raw / f"{name}.jsonl", raw / f"{name}.local.jsonl", raw / f"{name}.extra.jsonl", raw / f"{name}.supervised.jsonl"]:
+    for f in [raw / f"{name}.jsonl", raw / f"{name}.local.jsonl", raw / f"{name}.extra.jsonl", raw / f"{name}.supervised.jsonl", raw / f"{name}.clef.jsonl"]:
         if f.exists():
             rows += [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
     # keep the last row per (system, variant, item) so reruns supersede earlier rows
@@ -131,8 +132,10 @@ def analyse_choice_source(name, raw, task_path, items_path, ambiguous_key=None):
             pv[f"{s}/{v}"] = comps[f"{s}/{v}"]["mcnemar"]["p"]
         pre = {k: p for k, p in pv.items() if k.split("/")[0] not in EXTRA and k.endswith("/choice")}
         rat = {k: p for k, p in pv.items() if k.endswith("/rationale")}
-        post = {k: p for k, p in pv.items() if k.split("/")[0] in EXTRA}
-        for fam, pvals in (("pre-registered systems", pre), ("rationale variants", rat), ("post hoc", post)):
+        post = {k: p for k, p in pv.items() if k.split("/")[0] in EXTRA - CLEF}
+        clef = {k: p for k, p in pv.items() if k.split("/")[0] in CLEF}
+        for fam, pvals in (("pre-registered systems", pre), ("rationale variants", rat), ("post hoc", post),
+                           ("post hoc, Clef (October 2026)", clef)):
             for k, p in holm(pvals).items():
                 comps[k]["mcnemar"]["p_holm"] = round(p, 5)
                 comps[k]["holm_family"] = fam
@@ -364,7 +367,7 @@ def analyse_degenerate(raw):
 def analyse_latency():
     """Isolated latency run (protocol changelog): local at batch 1, API at concurrency 1, cache bypassed."""
     out = {}
-    for f, kind in (("local.jsonl", "local"), ("api_c1.jsonl", "api")):
+    for f, kind in (("local.jsonl", "local"), ("api_c1.jsonl", "api"), ("api_c1.clef.jsonl", "api")):
         p = ROOT / "results/raw/latency" / f
         if not p.exists():
             continue
@@ -374,7 +377,11 @@ def analyse_latency():
             if r["valid"] and r.get("latency_s") is not None and not r.get("cached"):
                 by[r["system"]].append(r["latency_s"])
         for s, x in by.items():
-            out[s] = {"kind": kind, "n": len(x), "p50_s": pctl(x, 50), "p95_s": pctl(x, 95)}
+            if s in out:  # several files per system are pooled
+                x = x + out[s]["_x"]
+            out[s] = {"_x": x, "kind": kind, "n": len(x), "p50_s": pctl(x, 50), "p95_s": pctl(x, 95)}
+    for v in out.values():
+        v.pop("_x")
     return out
 
 

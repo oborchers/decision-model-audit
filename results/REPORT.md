@@ -189,6 +189,36 @@ With about 2,800 labelled examples, an off-the-shelf embedding model plus logist
 
 Reference, zero-shot: Jev 86.3% [82.5, 89.3], GPT-6 Luna 88.8%. With about 50 labelled examples per class the embedding classifier is within 1.3 points of Jev and already has a lower AURC (0.046 vs 0.067); with 20 per class it is at the lower end of Jev's confidence interval. TF-IDF needs roughly ten times as many labels. C was fixed at the value chosen by cross-validation on the full training set.
 
+### Post hoc: Clef and Clef-flash (Cloudflare, added 2026-10-02)
+
+Cloudflare released two open-weight decision models with a Jev-compatible API on 2026-09-30: Clef (27B, from Qwen3.8-27B) and Clef-flash (9B, from Qwen3.5-9B), Apache-2.0. Both were run through Cloudflare Workers AI with the identical requests and variants as Jev (protocol changelog 2026-10-02). They form their own Holm family, so earlier adjusted p values are unchanged. Hosted weights expose no revision.
+
+**S1 arXiv**
+
+| System | Accuracy | Δ vs Jev [95% CI] | Holm p | ECE (`confidence`) | ECE (top probability) | AURC | Error at 80% coverage | USD per 1,000 |
+|---|---|---|---|---|---|---|---|---|
+| Jev | 86.3% [82.5, 89.3] | | | 0.068 | 0.073 | 0.067 | 8.6% | 0.035 |
+| Clef | 85.8% [82.0, 88.8] | −0.5 [−3.0, +2.0] | 0.84 | 0.095 | 0.032 | 0.073 | 8.8% | 0.155 |
+| Clef-flash | 82.3% [78.2, 85.7] | −4.0 [−6.5, −1.8] | 0.003 | 0.139 | 0.062 | 0.065 | 9.4% | 0.058 |
+
+Unambiguous subset: Clef 87.7%, Clef-flash 84.0% (Jev 87.7%). Clef is not distinguishable from Jev; Clef-flash is 4 points behind.
+
+**Two probability fields.** Like Jev, the response carries `confidence` next to `probabilities`, and for Clef they differ by a lot: mean `confidence` 0.76 against mean top probability 0.87 at 85.8% accuracy. `confidence` is underconfident (ECE 0.095, the pre-specified field). As a sensitivity check, the top probability gives ECE 0.032, which would be the lowest among the decision models and close to the embedding classifier's 0.029; this compares an alternate field for Clef with the reported confidence of the other systems. Neither Clef model returns saturated values (373 and 388 distinct values, none at 1.0; Jev: 53 distinct, 51.5% exactly 1.0).
+
+**Stability and repeatability (S1).** Agreement with the own choice run: reversed order 100% for both (Jev 99.0%), paraphrases Clef 96.5 to 97.0%, Clef-flash 92.3 to 93.3% (Jev 97.5 to 98.0%), yes/no form Clef 89.5%, Clef-flash 91.0% (Jev 97.0%). Repeated requests with the cache bypassed: 100% label agreement and identical confidences for both (Jev 99.0%). Yes/no form costs accuracy: Clef 79.8%, Clef-flash 76.8% (Jev 86.5%), ECE 0.305 and 0.138.
+
+**No fitting label (P4) and false "none" (S1).** With an explicit "none" option: Clef 87%, Clef-flash 92% detected (Jev 95%); false "none" on S1 0.0% and 0.25% (Jev 1.0%). Threshold-free AUROC: Clef 0.892, Clef-flash 0.935 (Jev 0.900).
+
+**Stated probabilities (P1).** Mean absolute error between returned and stated chance: Clef 0.207, Clef-flash 0.156 (Jev 0.027). Both follow the stated chance below 50% and jump above it (stated 0.5 gives 0.87 and 0.73, stated 0.9 gives 0.97 and 0.86). One hypothesis, not tested here: the noul probability expresses how clearly the statement leans towards yes rather than the stated chance. P2 minimal pairs: 100% for both.
+
+**Long input (P3) through Workers AI.** Accuracy by length 500 / 2k / 8k / 24k: Clef 1.00 / 0.97 / 0.66 / 0.64, Clef-flash 0.93 / 0.90 / 0.66 / 0.64. Workers AI truncates the state silently: `usage.input_tokens` is exactly 2,198 for every item from about 1,600 words on, although the catalogue lists 65,536 tokens. Beyond the cap, the decisive sentence is found only at 5% position (recall 1.0) and never at 50% or 95% (0.0); specificity stays 1.0. This measures the hosted path, not the models' own window.
+
+**Batches of 10 per request.** Clef 65.5% (−20.3 points), Clef-flash 64.5% (−17.8), both p < 0.001. The pattern is consistent with the same truncation: every batch request is billed at exactly 5,190 tokens, and accuracy by position in the batch falls from about 85% for papers 1 to 7 to 5 to 47% for papers 8 to 10. The API does not expose the retained text, so the exact cutoff is inferred. Batch latency is based on 10 requests per model (the `n_requests_latency` field counts paper rows, as for Jev).
+
+**S2 Federal Register.** Clef 98.9%, Clef-flash 99.2% (Jev 99.4%), no significant differences.
+
+**Latency and cost.** Isolated, concurrency 1, cache bypassed, 30 S1 items, direct REST from the same laptop: Clef 0.34 / 0.64 s p50 / p95, Clef-flash 0.19 / 0.29 s (Jev via OpenRouter 0.47 / 0.60 s). Cloudflare reports 209 ms and 39 ms server-side. Cost per 1,000 S1 decisions at Workers AI list prices: Clef USD 0.155 (4.4 times Jev), Clef-flash USD 0.058 (1.7 times Jev); Clef counts about 21% fewer input tokens than Jev for the same request. Whole programme: USD 1.12 at list prices, booked in `results/raw/clef/spend.jsonl`; Cloudflare analytics agree within 1.5% on input tokens (difference: connectivity checks before the ledger existed).
+
 ### Bounds on attainable accuracy (S1, exploratory)
 
 At least one of the five API systems is right on 95.5% of papers; all five are wrong on 4.5%, and on 16 of those 18 they agree on the same other category. Majority vote reaches 90.0% (2 items with a 2–2 tie, broken by system order; the alternative rule gives 90.25%). Excluding the 16 consensus items: Jev 89.8%, Luna 92.5%, Gemini 91.7%, Haiku 90.9%, Sonnet 93.5%, TF-IDF 84.1%, Eikos 83.9%. This suggests, but does not measure, a practical ceiling below 100%: the label is the author's choice among overlapping categories, and the 16 consensus items were not independently adjudicated.

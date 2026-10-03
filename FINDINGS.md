@@ -123,3 +123,11 @@ Qwen3-Embedding-8B + LR (balanced), mean over 10 draws: 40 labels 73.7%, 80 79.0
 ## 2026-09-28, rounding correction
 
 Earlier entries in this log and the first REPORT.md version rounded GPT-6 Luna's S1 accuracy (0.8875) to 88.7% and Claude Sonnet 5's (0.8975) to 89.7%. Rounded half up these are 88.8% and 89.8%, as in `summary.json`-based figures. REPORT.md is corrected; the historical entries above are left as written. The same applies to DeBERTa NLI (0.6675 → 66.8%), GLiClass (0.6425 → 64.3%) and Qwen letter logprobs (0.5325 → 53.3%).
+
+## 2026-10-02, Clef and Clef-flash (post hoc)
+
+Cloudflare's open-weight decision models, run through Workers AI with the same requests as Jev. S1: Clef 85.8% (Δ −0.5 [−3.0, +2.0], n.s.), Clef-flash 82.3% (Δ −4.0 [−6.5, −1.8], p_holm 0.003). S2: 98.9% and 99.2%, n.s. Clef's `confidence` field is underconfident (ECE 0.095); its top probability is well calibrated (0.032, sensitivity check); no saturated values (Jev: 51.5% exactly 1.0). Reversed order changes no answer; repeated calls are bit-identical. Stated chances (P1) are not reproduced: MAE 0.21 and 0.16 against Jev's 0.027, with a jump above 50%. "None" detection 87% and 92% (Jev 95%) with almost no false "none".
+
+**Negative finding about the hosted path:** Workers AI truncates the state silently at about 2,200 tokens (`usage.input_tokens` exactly 2,198 from about 1,600 words on) although 65,536 tokens are advertised. P3 drops to 0.66 and 0.64 beyond the cap, and batches of 10 lose 18 to 20 points, with accuracy collapsing for papers 8 to 10 and every batch billed at exactly 5,190 tokens, consistent with the same truncation. Both point to Workers AI, not to the models.
+
+**Operational:** the Workers Free allocation (10,000 neurons per day) ran out mid-run; requests returned HTTP 429 code 4006 and the client retried silently until stopped. The author upgraded to Workers Paid; the client now aborts on quota or plan refusals. Spend: USD 1.12 at list prices in the ledger (3.41 M input tokens per model); Cloudflare's analytics show 3.46 M and 3.45 M tokens (difference: connectivity checks before the ledger existed) and 103,668 neurons, of which 10,000 were free, so about USD 1.03 billed on top of the USD 5 monthly plan.

@@ -14,12 +14,17 @@ G = ROOT / "results/raw/gaps"
 
 
 def rows(path):
-    return [json.loads(l) for l in Path(path).read_text().splitlines() if l.strip()]
+    """Rows of a gaps file plus its `.clef.jsonl` sibling (post hoc Clef runs, October 2026)."""
+    out = []
+    for p in (Path(path), Path(path).with_suffix(".clef.jsonl")):
+        if p.exists():
+            out += [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
+    return out
 
 
 def main():
     main_s1 = group(load_rows(ROOT / "results/raw/main", "s1"))
-    base = {s: {r["item_id"]: r for r in main_s1[(s, "choice")]} for s in ("jev", "luna", "flash", "haiku")}
+    base = {s: {r["item_id"]: r for r in main_s1[(s, "choice")]} for s in ("jev", "luna", "flash", "haiku", "clef", "clef-flash") if (s, "choice") in main_s1}
     out = {"stability": {}, "batch": {}, "repeat": {}}
     # stability
     st = {}
@@ -33,7 +38,7 @@ def main():
     bt = {}
     for r in rows(G / "s1_batch.jsonl"):
         bt.setdefault(r["system"], {})[r["item_id"]] = r
-    lat_jev = [r["batch_latency_s"] for r in rows(G / "s1_batch_latency.jsonl") if r.get("batch_latency_s")]
+    blat_rows = rows(G / "s1_batch_latency.jsonl")
     for s, d in bt.items():
         ids = sorted(set(d) & set(base[s]))
         a = np.array([base[s][i]["valid"] and base[s][i]["pred"] == base[s][i]["gold"] for i in ids])
@@ -41,7 +46,8 @@ def main():
         k = int(b.sum())
         single_cost = np.mean([base[s][i]["cost_usd"] or 0 for i in ids])
         batch_cost = np.mean([d[i]["cost_usd"] or 0 for i in ids])
-        blat = lat_jev if s == "jev" else sorted({d[i]["batch_latency_s"] for i in ids if d[i].get("batch_latency_s")})
+        own = [r["batch_latency_s"] for r in blat_rows if r["system"] == s and r.get("batch_latency_s")]  # one value per row, as in the original analysis
+        blat = own or sorted({d[i]["batch_latency_s"] for i in ids if d[i].get("batch_latency_s")})
         out["batch"][s] = {"n": len(ids), "accuracy_single": round(float(a.mean()), 4), "accuracy_batch10": round(float(b.mean()), 4),
                            "acc_batch_ci95": [round(x, 4) for x in wilson(k, len(ids))],
                            "delta": round(float(b.mean() - a.mean()), 4),
