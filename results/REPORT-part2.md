@@ -288,6 +288,21 @@ Curves: `figures/teil2_finetune_curves_400.png`, `figures/teil2_finetune_curves_
 
 With 400 training labels the classical recipe of part 1 (frozen embeddings plus logistic regression, trained in seconds, no validation set) is 5 to 6 points ahead of both fine-tuned models, which additionally used 400 validation labels. With all labels, the plain encoder catches up with Jev, and Laya's decision pretraining shows no advantage in these recipes; other budgets or methods were not tested. Choosing the epoch used 400 additional labelled papers for validation, a real cost in a 400-label setting. The last row was added after the long-run results and is reported as such (protocol).
 
+### Clef and Clef-flash self-hosted (post hoc)
+
+Through Workers AI, Clef lost the deciding sentence in long inputs and 20 points on batches of ten. To separate the model from the hosted path, both models ran with open weights on one rented NVIDIA A100 80 GB (Runpod) through the vendor's `joint_schema_model.py` (`src/dma/local_servers/clef_selfhost.py`, revisions `2f3de3dd` and `17f0b0ad`), identical request bodies, one request at a time.
+
+| | Clef self-hosted | Clef Workers AI | Clef-flash self-hosted | Clef-flash Workers AI |
+|---|---|---|---|---|
+| S1 accuracy | 85.75% (labels identical to Workers AI on all 400) | 85.75% | 82.5% | 82.25% |
+| S1 batch of ten | 85.75% | 65.5% | 80.5% | 64.5% |
+| P3 500 / 2k / 8k / 24k, vendor default `max_length` 16,384 | 1.00 / 1.00 / 1.00 / 0.82 | 1.00 / 0.97 / 0.66 / 0.64 | 0.96 / 0.93 / 0.93 / 0.82 | 0.93 / 0.90 / 0.66 / 0.64 |
+| P3 with `max_length` 65,536 | 1.00 / 1.00 / 1.00 / 1.00 | | 0.96 / 0.93 / 0.93 / 0.86 | |
+| False "none" on S1 | 0 / 400 | 0 / 400 | 1 / 400 | 1 / 400 |
+| Latency p50 / p95, S1 | 0.35 / 0.39 s | 0.34 s (p50) | 0.13 / 0.15 s | 0.19 s (p50) |
+
+The vendor function truncates the state silently at `max_length=16384` by default (max observed input 16,384 tokens; the backbone allows far more). With 65,536 the full 24k inputs reach the model (max 24,840 tokens) and Clef finds the sentence in 28 of 28 cases at a median of 11.5 s per 24k request (Clef-flash 4.1 s), with reference kernels (`causal_conv1d` and `flash-linear-attention` not installed). Clef-flash's remaining long-input errors are therefore the model's. An exploratory image check (50 Imagenette photos) is logged in the protocol and is not part of any comparison. Rows in `results/raw/*/*.selfhost.jsonl`, run scripts `scripts/run_clef_selfhost.sh` and `scripts/run_clef_selfhost2.sh`.
+
 ### Latency and cost
 
 Isolated latency, p50 / p95 seconds, 30 S1 papers, concurrency 1, cache bypassed:
@@ -295,18 +310,19 @@ Isolated latency, p50 / p95 seconds, 30 S1 papers, concurrency 1, cache bypassed
 - Hosted: pplx-decider 0.26 / 0.29, Tev1 0.39 / 0.48, Jev 0.47 / 0.60, D1 0.52 / 1.05, Kev 4B 0.75 / 1.00, Solar 0.82 / 1.34, GLiDE 1.10 / 1.62 (all from Germany; Mercury not measured).
 - Laptop (M1 Pro, 16 GB): Kai 0.67 / 11.0 (MPS), Strands 0.93 / 1.29 (MPS), APUS 4B 1.76 / 2.24, APUS 9B 5.15 / 6.63 (MLX, 4-bit).
 - GPU (one A40): Nox 4B 0.15 / 0.19.
+- GPU (one A100 80 GB): Clef 0.35 / 0.39, Clef-flash 0.13 / 0.15 (self-hosted, see above).
 - CLM-8B returned answers in about 2 ms, below a forward pass of an 8B encoder on this laptop; its server had already embedded these papers during the main run, so the number is not reported.
 
 Local and GPU numbers are not comparable with each other or with vendor claims measured on other hardware.
 
-Spend for part 2 at list prices, from the ledgers: OpenRouter USD 1.75 (`results/raw/teil2/spend_openrouter.jsonl`, including Jev and Luna on the new probes), Fastino USD 3.43 and Perplexity USD 0.33 (`spend_ext.jsonl`), Cloudflare USD 0.65 (`results/raw/clef/spend.jsonl` minus the 1.12 of the Clef run), Runpod about USD 2.66 (one A40 for 5.4 hours: Nox 4B and all fine-tuning). Total about USD 8.80.
+Spend for part 2 at list prices, from the ledgers: OpenRouter USD 1.75 (`results/raw/teil2/spend_openrouter.jsonl`, including Jev and Luna on the new probes), Fastino USD 3.43 and Perplexity USD 0.33 (`spend_ext.jsonl`), Cloudflare USD 0.65 (`results/raw/clef/spend.jsonl` minus the 1.12 of the Clef run), Runpod about USD 2.66 (one A40 for 5.4 hours: Nox 4B and all fine-tuning). Total about USD 8.80. The two self-hosted Clef runs added about USD 1.36 on one A100 (about 50 minutes in total).
 
 ## Limitations
 
 - **Post hoc.** Everything here was added after part 1 and decided with knowledge of its results. Each addition was logged before its evaluation calls; three steps were decided after seeing results and are marked (P5 to P7 revision after a pilot at ceiling, fine-tuning with longer training, the shared fine-tuning recipe).
 - **One task family.** S1 is topic classification near its practical ceiling (part 1: majority vote of five API systems 90.0%). The new probes are constructed, single-purpose and partly near ceiling (P5, P6, S2). Decisions with rules, exceptions or several interacting questions were not tested.
 - **Interfaces differ.** All decision models received the identical request, but each provider interprets fields in its own way (`confidence`, `score`, limits). Results describe the hosted or vendor-served path at the time of the run, not the models in isolation. Hosted weights have no revision and may change.
-- **Local hardware.** Strands, APUS, CLM and Kai ran on a 16 GB laptop, Nox on a rented A40. Latencies are not comparable across these setups. Strands crashed under concurrent requests on the Apple GPU and was rerun serially; all local models ran one request at a time.
+- **Local hardware.** Strands, APUS, CLM and Kai ran on a 16 GB laptop, Nox on a rented A40, self-hosted Clef and Clef-flash on a rented A100 80 GB. Latencies are not comparable across these setups. Strands crashed under concurrent requests on the Apple GPU and was rerun serially; all local models ran one request at a time.
 - **Mercury** ran a reduced programme on the free tier (no stability, batches, latency, P1 to P3, FWF).
 - **Automation rate** chooses the threshold on the evaluation data and has wide intervals; it compares systems, it does not predict production coverage.
 - **Probes were authored by the orchestrating model (Claude)** where templates were needed (P7 logs). No model under test generated text.
