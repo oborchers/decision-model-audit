@@ -9,7 +9,7 @@ import json
 import math
 from concurrent.futures import ThreadPoolExecutor
 
-from dma import cf_client
+from dma import cf_client, ext_client
 from dma.client import chat, decisions as or_decisions
 from dma.tasks import Task, load_items, result_row, write_rows
 
@@ -22,12 +22,20 @@ LLM = {
     "sonnet": ("anthropic/claude-sonnet-5", "Anthropic", {"reasoning": {"effort": "none"}}),
 }
 JEV_MODEL = "typesafe/jev-1.13"
-DECISION_SYSTEMS = ("jev", "clef", "clef-flash")  # Clef and Clef-flash (post hoc, 2026-10) via Workers AI
+# Part 2 (2026-10): further decision models on OpenRouter, same /alpha/decisions path as Jev
+OR_DECISION = {"jev": JEV_MODEL, "d1": "liquid/d1", "solar": "upstage/solar-decide",
+               "mercury": "inception/mercury-decide:free", "tev1": "togethercomputer/tev1-4b-experimental",
+               "kev-4b-api": "jaredpalmer/kev-4b"}
+CF_DECISION = ("clef", "clef-flash")
+EXT_DECISION = tuple(ext_client.PROVIDERS)  # local SystemOne servers, Perplexity, Fastino
+DECISION_SYSTEMS = (*OR_DECISION, *CF_DECISION, *EXT_DECISION)
 
 
 def decisions(system: str, state, questions: dict) -> dict:
-    if system == "jev":
-        return or_decisions(JEV_MODEL, state, questions)
+    if system in OR_DECISION:
+        return or_decisions(OR_DECISION[system], state, questions)
+    if system in EXT_DECISION:
+        return ext_client.decisions(system, state, questions)
     return cf_client.decisions(system, state, questions)
 
 
@@ -43,6 +51,8 @@ def run_jev(task: Task, item: dict, variant: str, system: str = "jev") -> dict:
         resp = rec["response"]
         if "error" in resp:
             return result_row(item, system, variant, valid=False, extra={"error": resp["error"]})
+        if "error" in resp["answers"]["q"]:  # per-question refusal, e.g. Decision 2.0 "max_length_exceeded"
+            return result_row(item, system, variant, valid=False, extra={"error": resp["answers"]["q"]["error"]})
         p = resp["answers"]["q"]["noul"]
         return result_row(item, system, "noul", pred=p >= 0.5, probs={"yes": p}, confidence=max(p, 1 - p),
                           latency_s=None if rec["cached"] else rec["latency_s"], cost_usd=resp["usage"]["cost"],
@@ -56,19 +66,37 @@ def run_jev(task: Task, item: dict, variant: str, system: str = "jev") -> dict:
         resp = rec["response"]
         if "error" in resp:
             return result_row(item, system, variant, valid=False, extra={"error": resp["error"]})
+        if any("error" in resp["answers"][k] for k in keys):
+            return result_row(item, system, variant, valid=False, extra={"error": "per-question refusal"})
         probs = {keys[k]: resp["answers"][k]["noul"] for k in keys}
         pred = max(probs, key=probs.get)
         s = sum(probs.values()) or 1.0
         return result_row(item, system, variant, pred=pred, probs=probs, confidence=probs[pred] / s,
                           latency_s=None if rec["cached"] else rec["latency_s"], cost_usd=resp["usage"]["cost"],
                           extra={"gen_id": resp.get("id"), "yes_sum": s, "cached": rec["cached"]})
-    labels = task.label_map(variant)
+    if task.type == "score":
+        q = {"q": {"type": "score", "instructions": item.get("question") or task.instructions, "criteria": task.levels}}
+        rec = decisions(system, item["text"], q)
+        resp = rec["response"]
+        if "error" in resp:
+            return result_row(item, system, variant, valid=False, extra={"error": resp["error"]})
+        a = resp["answers"]["q"]
+        if "error" in a:
+            return result_row(item, system, "score", valid=False, extra={"error": a["error"]})
+        probs = {int(k): v for k, v in a["probabilities"].items()}
+        pred = max(probs, key=probs.get)
+        return result_row(item, system, "score", pred=pred, probs=probs, confidence=a.get("confidence"),
+                          latency_s=None if rec["cached"] else rec["latency_s"], cost_usd=resp["usage"]["cost"],
+                          extra={"expected_score": a.get("score"), "usage": resp.get("usage"), "cached": rec["cached"]})
+    labels = task.label_map(variant, item)
     q = {"q": {"type": "choice", "instructions": task.instructions, "criteria": labels}}
     rec = decisions(system, item["text"], q)
     resp = rec["response"]
     if "error" in resp:
         return result_row(item, system, variant, valid=False, extra={"error": resp["error"]})
     a = resp["answers"]["q"]
+    if "error" in a:
+        return result_row(item, system, variant, valid=False, extra={"error": a["error"]})
     return result_row(item, system, variant, pred=a["choice"], probs=a["probabilities"], confidence=a["confidence"],
                       latency_s=None if rec["cached"] else rec["latency_s"], cost_usd=resp["usage"]["cost"],
                       extra={"gen_id": resp.get("id"), "usage": resp.get("usage"), "cached": rec["cached"]})
@@ -89,8 +117,12 @@ def run_llm(system: str, task: Task, item: dict, variant: str) -> dict:
         fmt = _schema({"answer": {"type": "string", "enum": ["yes", "no"]}, "probability_yes": {"type": "number"}},
                       ["answer", "probability_yes"])
     else:
-        labels = task.label_map("choice" if variant == "rationale" else variant)
-        sys_msg = f"{task.instructions}\n\nOptions:\n{options_text(labels)}\n\n"
+        if task.type == "score":
+            labels = {str(i): d for i, d in enumerate(task.levels)}
+            sys_msg = f"{task.instructions}\n\nQuestion: {item['question']}\n\nOptions:\n{options_text(labels)}\n\n"
+        else:
+            labels = task.label_map("choice" if variant == "rationale" else variant, item)
+            sys_msg = f"{task.instructions}\n\nOptions:\n{options_text(labels)}\n\n"
         props = {"label": {"type": "string", "enum": list(labels)}, "confidence": {"type": "number"}}
         req = ["label", "confidence"]
         if variant == "rationale":
@@ -124,6 +156,9 @@ def run_llm(system: str, task: Task, item: dict, variant: str) -> dict:
     if variant == "rationale":
         x["reasoning"] = out.get("reasoning")
     c = float(out["confidence"])
+    if task.type == "score":
+        return result_row(item, system, "score", pred=int(out["label"]), probs={int(out["label"]): c}, confidence=c,
+                          latency_s=lat, cost_usd=usage.get("cost"), extra=x)
     return result_row(item, system, variant, pred=out["label"], probs={out["label"]: c}, confidence=c,
                       latency_s=lat, cost_usd=usage.get("cost"), extra=x)
 
@@ -147,7 +182,7 @@ def run_batch(system: str, task: Task, items: list[dict], variant: str) -> list[
         rows = []
         for i, it in enumerate(items):
             a = resp["answers"].get(f"q{i}")
-            if not a:
+            if not a or "error" in a:
                 rows.append(result_row(it, system, variant, valid=False, extra={"error": "missing answer"}))
                 continue
             rows.append(result_row(it, system, variant, pred=a["choice"], probs=a["probabilities"],

@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from dma.analysis.metrics import risk_at_coverage
-from dma.analysis.report import EXTRA, group, load_rows
+from dma.analysis.report import EXTRA, TEIL2, group, load_rows
 
 ROOT = Path(__file__).resolve().parents[3]
 RAW = ROOT / "results/raw/main"
@@ -40,7 +40,7 @@ def style(s):
 
 def s1_choice():
     g = group(load_rows(RAW, "s1"))
-    return {s: sorted(rows, key=lambda r: r["item_id"]) for (s, v), rows in g.items() if v == "choice"}
+    return {s: sorted(rows, key=lambda r: r["item_id"]) for (s, v), rows in g.items() if v == "choice" and s not in TEIL2}  # part 1 figures; part 2 has its own
 
 
 def risk_coverage(data):
@@ -104,6 +104,8 @@ def cost_accuracy(summary):
 def long_input(summary):
     fig, ax = plt.subplots(figsize=(7, 4.5))
     for s, v in sorted(summary["p3_long_input"].items()):
+        if s in TEIL2:
+            continue
         L = sorted(int(x) for x in v["accuracy_by_length"])
         ax.plot(L, [v["accuracy_by_length"][str(x)] for x in L], marker="o", ms=3, label=NAMES.get(s, s), **style(s))
     ax.set_xscale("log")

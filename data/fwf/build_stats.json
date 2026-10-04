@@ -1,0 +1,28 @@
+{
+ "raw_file": "projects_2026-10-02.jsonl.gz",
+ "raw_sha256": "fc584d2432dff77f8e6dcb59064dd7c18bf1b391861f46c6f1ac2f13e9c05a63",
+ "projects": 20399,
+ "eligible_per_field": {
+  "Mathematics": 402,
+  "Physics, Astronomy": 446,
+  "Chemistry": 196,
+  "Biology": 732,
+  "Computer Sciences": 147,
+  "Geosciences": 127,
+  "History, Archaeology": 131,
+  "Linguistics and Literature": 157
+ },
+ "pilot": 40,
+ "main": 600,
+ "seed": 20261002,
+ "german_field_names": {
+  "Biology": "Biologie",
+  "Mathematics": "Mathematik",
+  "Computer Sciences": "Informatik",
+  "Physics, Astronomy": "Physik, Astronomie",
+  "Chemistry": "Chemie",
+  "History, Archaeology": "Geschichte, Archäologie",
+  "Linguistics and Literature": "Sprach- und Literaturwissenschaften",
+  "Geosciences": "Geowissenschaften"
+ }
+}

@@ -1,0 +1,11 @@
+{
+ "name": "p7_count",
+ "type": "score",
+ "instructions": "Count the events of the requested type in the JSON log.",
+ "levels": [
+  "No such event",
+  "1 to 2 such events",
+  "3 to 5 such events",
+  "6 or more such events"
+ ]
+}
