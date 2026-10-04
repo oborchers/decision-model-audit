@@ -6,6 +6,8 @@ Status: complete (September 2026 snapshot), with a post hoc addition of Cloudfla
 
 Write-up: [Ist Jev wirklich gut? Ein Feldtest auf frischen Daten](https://www.drborchers.com/blog/jev-feldtest/) (German) and [Is Jev Actually Any Good? A Field Test on Fresh Data](https://www.drborchers.com/en/blog/jev-field-test/) (English).
 
+Part 2: [Brauchen Sie überhaupt ein Decision-Modell?](https://www.drborchers.com/blog/brauchen-sie-ein-decision-modell/) (German) and [Do You Even Need a Decision Model?](https://www.drborchers.com/en/blog/do-you-need-a-decision-model/) (English).
+
 ## Questions
 
 1. Accuracy and calibration of the returned probabilities
