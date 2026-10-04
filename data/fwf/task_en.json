@@ -1,0 +1,15 @@
+{
+ "name": "fwf",
+ "type": "choice",
+ "instructions": "Which research field does this research project primarily belong to?",
+ "labels": {
+  "Mathematics": "Research field: Mathematics.",
+  "Physics, Astronomy": "Research field: Physics, Astronomy.",
+  "Chemistry": "Research field: Chemistry.",
+  "Biology": "Research field: Biology.",
+  "Computer Sciences": "Research field: Computer Sciences.",
+  "Geosciences": "Research field: Geosciences.",
+  "History, Archaeology": "Research field: History, Archaeology.",
+  "Linguistics and Literature": "Research field: Linguistics and Literature."
+ }
+}

@@ -131,6 +131,281 @@
    "latency_per_request_p50_s": 1.115,
    "latency_per_decision_p50_s": 0.112,
    "n_requests_latency": 100
+  },
+  "d1": {
+   "n": 400,
+   "accuracy_single": 0.8125,
+   "accuracy_batch10": 0.8425,
+   "acc_batch_ci95": [
+    0.8036,
+    0.8749
+   ],
+   "delta": 0.03,
+   "delta_ci95": [
+    0.005,
+    0.0551
+   ],
+   "mcnemar": {
+    "a_only": 8,
+    "b_only": 20,
+    "p": 0.03569813817739487
+   },
+   "agreement_with_single": 0.9225,
+   "cost_per_1k_single": 0.0191,
+   "cost_per_1k_batch10": 0.128,
+   "latency_per_request_p50_s": 0.823,
+   "latency_per_decision_p50_s": 0.082,
+   "n_requests_latency": 100
+  },
+  "solar": {
+   "n": 400,
+   "accuracy_single": 0.7925,
+   "accuracy_batch10": 0.8025,
+   "acc_batch_ci95": [
+    0.7607,
+    0.8386
+   ],
+   "delta": 0.01,
+   "delta_ci95": [
+    -0.03,
+    0.05
+   ],
+   "mcnemar": {
+    "a_only": 32,
+    "b_only": 36,
+    "p": 0.716300760154337
+   },
+   "agreement_with_single": 0.81,
+   "cost_per_1k_single": 0.0392,
+   "cost_per_1k_batch10": 0.165,
+   "latency_per_request_p50_s": 14.586,
+   "latency_per_decision_p50_s": 1.459,
+   "n_requests_latency": 100
+  },
+  "tev1": {
+   "n": 400,
+   "accuracy_single": 0.8125,
+   "accuracy_batch10": 0.755,
+   "acc_batch_ci95": [
+    0.7106,
+    0.7946
+   ],
+   "delta": -0.0575,
+   "delta_ci95": [
+    -0.0925,
+    -0.0225
+   ],
+   "mcnemar": {
+    "a_only": 39,
+    "b_only": 16,
+    "p": 0.0026672623828598026
+   },
+   "agreement_with_single": 0.8475,
+   "cost_per_1k_single": 0.025,
+   "cost_per_1k_batch10": 0.1359,
+   "latency_per_request_p50_s": 1.054,
+   "latency_per_decision_p50_s": 0.105,
+   "n_requests_latency": 100
+  },
+  "kev-4b-api": {
+   "n": 400,
+   "accuracy_single": 0.855,
+   "accuracy_batch10": 0.3575,
+   "acc_batch_ci95": [
+    0.3121,
+    0.4056
+   ],
+   "delta": -0.4975,
+   "delta_ci95": [
+    -0.5525,
+    -0.4425
+   ],
+   "mcnemar": {
+    "a_only": 209,
+    "b_only": 10,
+    "p": 1.414681996469738e-49
+   },
+   "agreement_with_single": 0.3775,
+   "cost_per_1k_single": 0.0202,
+   "cost_per_1k_batch10": 0.0207,
+   "latency_per_request_p50_s": 1.169,
+   "latency_per_decision_p50_s": 0.117,
+   "n_requests_latency": 100
+  },
+  "pplx-decider": {
+   "n": 400,
+   "accuracy_single": 0.8725,
+   "accuracy_batch10": 0.885,
+   "acc_batch_ci95": [
+    0.85,
+    0.9127
+   ],
+   "delta": 0.0125,
+   "delta_ci95": [
+    -0.0075,
+    0.0325
+   ],
+   "mcnemar": {
+    "a_only": 6,
+    "b_only": 11,
+    "p": 0.332305908203125
+   },
+   "agreement_with_single": 0.9575,
+   "cost_per_1k_single": 0.0221,
+   "cost_per_1k_batch10": 0.1286,
+   "latency_per_request_p50_s": 0.523,
+   "latency_per_decision_p50_s": 0.052,
+   "n_requests_latency": 100
+  },
+  "strands-2b": {
+   "n": 400,
+   "accuracy_single": 0.7425,
+   "accuracy_batch10": 0.3825,
+   "acc_batch_ci95": [
+    0.3362,
+    0.431
+   ],
+   "delta": -0.36,
+   "delta_ci95": [
+    -0.4175,
+    -0.3049
+   ],
+   "mcnemar": {
+    "a_only": 162,
+    "b_only": 18,
+    "p": 3.740079731944358e-30
+   },
+   "agreement_with_single": 0.43,
+   "cost_per_1k_single": 0.0,
+   "cost_per_1k_batch10": 0.0,
+   "latency_per_request_p50_s": 11.294,
+   "latency_per_decision_p50_s": 1.129,
+   "n_requests_latency": 100
+  },
+  "glide": {
+   "n": 400,
+   "accuracy_single": 0.86,
+   "accuracy_batch10": 0.8875,
+   "acc_batch_ci95": [
+    0.8528,
+    0.9149
+   ],
+   "delta": 0.0275,
+   "delta_ci95": [
+    0.0075,
+    0.0475
+   ],
+   "mcnemar": {
+    "a_only": 3,
+    "b_only": 14,
+    "p": 0.012725830078125
+   },
+   "agreement_with_single": 0.955,
+   "cost_per_1k_single": 0.2554,
+   "cost_per_1k_batch10": 1.179,
+   "latency_per_request_p50_s": 9.714,
+   "latency_per_decision_p50_s": 0.971,
+   "n_requests_latency": 100
+  },
+  "apus-4b": {
+   "n": 400,
+   "accuracy_single": 0.82,
+   "accuracy_batch10": 0.72,
+   "acc_batch_ci95": [
+    0.6741,
+    0.7617
+   ],
+   "delta": -0.1,
+   "delta_ci95": [
+    -0.1425,
+    -0.0575
+   ],
+   "mcnemar": {
+    "a_only": 60,
+    "b_only": 20,
+    "p": 8.580559867049611e-06
+   },
+   "agreement_with_single": 0.78,
+   "cost_per_1k_single": 0.0,
+   "cost_per_1k_batch10": 0.0,
+   "latency_per_request_p50_s": 96.848,
+   "latency_per_decision_p50_s": 9.685,
+   "n_requests_latency": 100
+  },
+  "apus-9b": {
+   "n": 400,
+   "accuracy_single": 0.8375,
+   "accuracy_batch10": 0.7775,
+   "acc_batch_ci95": [
+    0.7342,
+    0.8155
+   ],
+   "delta": -0.06,
+   "delta_ci95": [
+    -0.095,
+    -0.0275
+   ],
+   "mcnemar": {
+    "a_only": 36,
+    "b_only": 12,
+    "p": 0.0007172696733945829
+   },
+   "agreement_with_single": 0.855,
+   "cost_per_1k_single": 0.0,
+   "cost_per_1k_batch10": 0.0,
+   "latency_per_request_p50_s": 196.17,
+   "latency_per_decision_p50_s": 19.617,
+   "n_requests_latency": 100
+  },
+  "decision2-kai-0.6b": {
+   "n": 400,
+   "accuracy_single": 0.715,
+   "accuracy_batch10": 0.2625,
+   "acc_batch_ci95": [
+    0.2218,
+    0.3077
+   ],
+   "delta": -0.4525,
+   "delta_ci95": [
+    -0.505,
+    -0.3975
+   ],
+   "mcnemar": {
+    "a_only": 192,
+    "b_only": 11,
+    "p": 7.56535003614067e-44
+   },
+   "agreement_with_single": 0.345,
+   "cost_per_1k_single": 0.0,
+   "cost_per_1k_batch10": 0.0,
+   "latency_per_request_p50_s": 57.749,
+   "latency_per_decision_p50_s": 5.775,
+   "n_requests_latency": 100
+  },
+  "decision2-nox-4b": {
+   "n": 400,
+   "accuracy_single": 0.815,
+   "accuracy_batch10": 0.7425,
+   "acc_batch_ci95": [
+    0.6975,
+    0.7829
+   ],
+   "delta": -0.0725,
+   "delta_ci95": [
+    -0.11,
+    -0.0375
+   ],
+   "mcnemar": {
+    "a_only": 43,
+    "b_only": 14,
+    "p": 0.0001538890224443423
+   },
+   "agreement_with_single": 0.8325,
+   "cost_per_1k_single": 0.0,
+   "cost_per_1k_batch10": 0.0,
+   "latency_per_request_p50_s": 7.484,
+   "latency_per_decision_p50_s": 0.748,
+   "n_requests_latency": 100
   }
  },
  "repeat": {
@@ -180,6 +455,105 @@
    "acc_run2": 0.8265
   },
   "clef": {
+   "n": 98,
+   "label_agreement": 1.0,
+   "conf_abs_diff_mean": 0.0,
+   "conf_abs_diff_max": 0.0,
+   "share_conf_identical": 1.0,
+   "acc_run1": 0.8469,
+   "acc_run2": 0.8469
+  },
+  "d1": {
+   "n": 98,
+   "label_agreement": 1.0,
+   "conf_abs_diff_mean": 0.0007,
+   "conf_abs_diff_max": 0.0364,
+   "share_conf_identical": 0.9592,
+   "acc_run1": 0.7857,
+   "acc_run2": 0.7857
+  },
+  "solar": {
+   "n": 98,
+   "label_agreement": 0.9796,
+   "conf_abs_diff_mean": 0.0419,
+   "conf_abs_diff_max": 0.5494,
+   "share_conf_identical": 0.0,
+   "acc_run1": 0.8163,
+   "acc_run2": 0.8061
+  },
+  "tev1": {
+   "n": 98,
+   "label_agreement": 1.0,
+   "conf_abs_diff_mean": 0.0023,
+   "conf_abs_diff_max": 0.0308,
+   "share_conf_identical": 0.2449,
+   "acc_run1": 0.8571,
+   "acc_run2": 0.8571
+  },
+  "kev-4b-api": {
+   "n": 98,
+   "label_agreement": 1.0,
+   "conf_abs_diff_mean": 0.0016,
+   "conf_abs_diff_max": 0.012,
+   "share_conf_identical": 0.3367,
+   "acc_run1": 0.8571,
+   "acc_run2": 0.8571
+  },
+  "strands-2b": {
+   "n": 98,
+   "label_agreement": 1.0,
+   "conf_abs_diff_mean": 0.0,
+   "conf_abs_diff_max": 0.0,
+   "share_conf_identical": 1.0,
+   "acc_run1": 0.7041,
+   "acc_run2": 0.7041
+  },
+  "pplx-decider": {
+   "n": 98,
+   "label_agreement": 1.0,
+   "conf_abs_diff_mean": 0.0,
+   "conf_abs_diff_max": 0.0,
+   "share_conf_identical": 1.0,
+   "acc_run1": 0.8571,
+   "acc_run2": 0.8571
+  },
+  "glide": {
+   "n": 98,
+   "label_agreement": 0.9898,
+   "conf_abs_diff_mean": 0.0016,
+   "conf_abs_diff_max": 0.1535,
+   "share_conf_identical": 0.9796,
+   "acc_run1": 0.8571,
+   "acc_run2": 0.8469
+  },
+  "apus-4b": {
+   "n": 98,
+   "label_agreement": 1.0,
+   "conf_abs_diff_mean": 0.0,
+   "conf_abs_diff_max": 0.0,
+   "share_conf_identical": 1.0,
+   "acc_run1": 0.8163,
+   "acc_run2": 0.8163
+  },
+  "apus-9b": {
+   "n": 98,
+   "label_agreement": 1.0,
+   "conf_abs_diff_mean": 0.0,
+   "conf_abs_diff_max": 0.0,
+   "share_conf_identical": 1.0,
+   "acc_run1": 0.8163,
+   "acc_run2": 0.8163
+  },
+  "decision2-kai-0.6b": {
+   "n": 98,
+   "label_agreement": 1.0,
+   "conf_abs_diff_mean": 0.0,
+   "conf_abs_diff_max": 0.0,
+   "share_conf_identical": 1.0,
+   "acc_run1": 0.7041,
+   "acc_run2": 0.7041
+  },
+  "decision2-nox-4b": {
    "n": 98,
    "label_agreement": 1.0,
    "conf_abs_diff_mean": 0.0,

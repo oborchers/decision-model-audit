@@ -24,6 +24,61 @@ BASE = "https://openrouter.ai/api"
 _key: str | None = None
 _key_lock = threading.Lock()
 
+# Spend ledger and caps (part 2, 2026-10). Active only when DMA_OR_BLOCK is set, so reruns of part 1 are unchanged.
+LEDGER = ROOT / "results" / "raw" / "teil2" / "spend_openrouter.jsonl"
+BLOCK = os.environ.get("DMA_OR_BLOCK")
+BUDGET_TOTAL = float(os.environ.get("DMA_OR_BUDGET", "4.0"))
+BLOCK_BUDGET = float(os.environ.get("DMA_OR_BLOCK_BUDGET", "inf"))
+_spend: dict | None = None
+_spend_lock = threading.Lock()
+
+
+class BudgetExceeded(RuntimeError):
+    pass
+
+
+def _ledger() -> dict:
+    global _spend
+    if _spend is None:
+        _spend = {"total": 0.0, "block": 0.0}
+        if LEDGER.exists():
+            for l in LEDGER.read_text().splitlines():
+                if l.strip():
+                    e = json.loads(l)
+                    _spend["total"] += e["cost"]
+                    _spend["block"] += e["cost"] if e["block"] == BLOCK else 0.0
+    return _spend
+
+
+def _check_budget() -> None:
+    if not BLOCK:
+        return
+    with _spend_lock:
+        s = _ledger()
+        if s["total"] >= BUDGET_TOTAL:
+            raise BudgetExceeded(f"OpenRouter part-2 spend {s['total']:.4f} USD reached cap {BUDGET_TOTAL} USD")
+        if s["block"] >= BLOCK_BUDGET:
+            raise BudgetExceeded(f"block {BLOCK} spend {s['block']:.4f} USD reached cap {BLOCK_BUDGET} USD")
+
+
+def _book(path: str, body: dict, resp: dict) -> None:
+    if not BLOCK or not isinstance(resp, dict) or "error" in resp:
+        return
+    cost = float((resp.get("usage") or {}).get("cost") or 0.0)
+    with _spend_lock:
+        s = _ledger()
+        s["total"] += cost
+        s["block"] += cost
+        LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with LEDGER.open("a") as f:
+            f.write(json.dumps({"ts": time.time(), "block": BLOCK, "path": path, "model": body.get("model"),
+                                "cost": cost}) + "\n")
+
+
+def spend() -> dict:
+    with _spend_lock:
+        return dict(_ledger())
+
 
 def _api_key() -> str:
     global _key
@@ -38,6 +93,7 @@ def _api_key() -> str:
 def _post(path: str, body: dict, timeout: float = 120.0, retries: int = 4) -> tuple[dict, float]:
     last = None
     for attempt in range(retries):
+        _check_budget()
         t0 = time.perf_counter()
         try:
             r = httpx.post(
@@ -69,6 +125,7 @@ def cached_call(path: str, body: dict) -> dict:
         rec["cached"] = True
         return rec
     resp, latency = _post(path, body)
+    _book(path, body, resp)
     rec = {"path": path, "request": body, "response": resp, "latency_s": latency, "ts": time.time()}
     err = resp.get("error") if isinstance(resp, dict) else None
     transient = err and (err.get("status") is None or err.get("status", 0) >= 500)

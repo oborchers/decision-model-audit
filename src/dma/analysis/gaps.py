@@ -14,9 +14,9 @@ G = ROOT / "results/raw/gaps"
 
 
 def rows(path):
-    """Rows of a gaps file plus its `.clef.jsonl` sibling (post hoc Clef runs, October 2026)."""
+    """Rows of a gaps file plus its `.clef.jsonl` and `.teil2.jsonl` siblings (post hoc runs, October 2026)."""
     out = []
-    for p in (Path(path), Path(path).with_suffix(".clef.jsonl")):
+    for p in (Path(path), Path(path).with_suffix(".clef.jsonl"), Path(path).with_suffix(".teil2.jsonl")):
         if p.exists():
             out += [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
     return out
@@ -24,7 +24,10 @@ def rows(path):
 
 def main():
     main_s1 = group(load_rows(ROOT / "results/raw/main", "s1"))
-    base = {s: {r["item_id"]: r for r in main_s1[(s, "choice")]} for s in ("jev", "luna", "flash", "haiku", "clef", "clef-flash") if (s, "choice") in main_s1}
+    base = {s: {r["item_id"]: r for r in main_s1[(s, "choice")]} for s in ("jev", "luna", "flash", "haiku", "clef", "clef-flash", "d1", "solar", "tev1",
+                                                                 "kev-4b-api", "strands-2b", "openjev-2b", "clm-8b", "pplx-decider", "glide",
+                                                                 "apus-4b", "apus-9b", "decision2-kai-0.6b", "decision2-nox-4b")
+            if (s, "choice") in main_s1}
     out = {"stability": {}, "batch": {}, "repeat": {}}
     # stability
     st = {}

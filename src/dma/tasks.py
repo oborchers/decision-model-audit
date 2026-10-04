@@ -38,14 +38,17 @@ class Task:
     labels: dict[str, str] = field(default_factory=dict)
     none_label: dict[str, str] = field(default_factory=dict)
     paraphrases: list[dict[str, str]] = field(default_factory=list)
+    levels: list[str] = field(default_factory=list)  # score tasks (P7): ordered level descriptions
 
     @classmethod
     def load(cls, path: str | Path) -> "Task":
         d = json.loads(Path(path).read_text())
         return cls(**{k: d[k] for k in d if k in cls.__dataclass_fields__})
 
-    def label_map(self, variant: str) -> dict[str, str]:
-        """Ordered label -> description for a choice variant."""
+    def label_map(self, variant: str, item: dict | None = None) -> dict[str, str]:
+        """Ordered label -> description for a choice variant. Items with their own "options" (P5) use those."""
+        if item is not None and item.get("options"):
+            return dict(item["options"])
         if variant == "choice_none":
             return {**self.labels, **self.none_label}
         if variant == "reversed":

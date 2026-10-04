@@ -1,0 +1,6 @@
+{
+ "name": "p5_titles",
+ "type": "choice",
+ "instructions": "Which of the listed titles belongs to the paper whose abstract is given?",
+ "labels": {}
+}

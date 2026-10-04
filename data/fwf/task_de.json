@@ -1,0 +1,15 @@
+{
+ "name": "fwf",
+ "type": "choice",
+ "instructions": "Zu welchem Forschungsfeld gehört dieses Forschungsprojekt hauptsächlich?",
+ "labels": {
+  "Mathematics": "Forschungsfeld: Mathematik.",
+  "Physics, Astronomy": "Forschungsfeld: Physik, Astronomie.",
+  "Chemistry": "Forschungsfeld: Chemie.",
+  "Biology": "Forschungsfeld: Biologie.",
+  "Computer Sciences": "Forschungsfeld: Informatik.",
+  "Geosciences": "Forschungsfeld: Geowissenschaften.",
+  "History, Archaeology": "Forschungsfeld: Geschichte, Archäologie.",
+  "Linguistics and Literature": "Forschungsfeld: Sprach- und Literaturwissenschaften."
+ }
+}

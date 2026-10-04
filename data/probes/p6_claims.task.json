@@ -1,0 +1,5 @@
+{
+ "name": "p6_claims",
+ "type": "noul",
+ "instructions": "Decide whether the statement is supported by the given text."
+}
