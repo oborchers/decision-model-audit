@@ -1,14 +1,17 @@
 """SystemOne-style endpoints outside OpenRouter and Workers AI (part 2, 2026-10).
 
 Local servers that speak POST /v1/systemone (Strands Decider, Open-Jev, CLM) and hosted APIs with the same body
-(Perplexity /v1/decisions, Fastino /v1/systemone). Same on-disk cache as the other clients; responses are
+(Perplexity /v1/decisions, Fastino /v1/systemone), plus OpenAI's Decisions API, whose own request shape is
+translated from and back to the Jev shape (`_to_openai`, `_from_openai`). Same on-disk cache as the other clients; responses are
 normalised to the Jev shape with usage.cost (0 for local servers).
 """
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
+import threading
 import time
 from pathlib import Path
 
@@ -34,7 +37,10 @@ PROVIDERS = {
     "pplx-decider": ("https://api.perplexity.ai/v1/decisions", "pplx-decider-v1-27b",
                      ("PERPLEXITY_API_KEY", "Authorization", "Bearer "), 0.04),
     "glide": ("https://api.fastino.ai/v1/systemone", "fastino/GLiDE", ("FASTINO_API_KEY", "X-API-Key", ""), 0.30),
+    "luna-decisions": ("https://api.openai.com/v1/decisions", "gpt-6-luna",
+                       ("OPENAI_API_KEY", "Authorization", "Bearer "), 0.10),
 }
+OPENAI_SHAPE = ("luna-decisions",)
 _client = httpx.Client(timeout=300.0)
 LEDGER = ROOT / "results" / "raw" / "teil2" / "spend_ext.jsonl"
 BUDGET = float(os.environ.get("DMA_EXT_BUDGET", "1.0"))  # USD, hard cap per paid provider (part 2)
@@ -62,9 +68,18 @@ def _spend(system: str, add: float = 0.0) -> float:
     return _spent.get(system, 0.0)
 
 
+_keys: dict | None = None
+_keys_lock = threading.Lock()
+
+
 def _key(var: str) -> str:
+    global _keys
     f = os.environ.get("DMA_EXT_KEY_FILE")
-    k = os.environ.get(var) or (dotenv_values(f).get(var) if f else None)
+    with _keys_lock:  # read once, by one thread: the file may be a 1Password named pipe
+        if _keys is None and f:
+            with open(f) as fh:
+                _keys = dotenv_values(stream=io.StringIO(fh.read()))
+    k = os.environ.get(var) or (_keys or {}).get(var)
     if not k:
         raise RuntimeError(f"Set {var}, or DMA_EXT_KEY_FILE to a dotenv file that contains it.")
     return k
@@ -102,6 +117,47 @@ def _post(system: str, body: dict, retries: int = 4) -> tuple[dict, float]:
     return {"error": {"status": None, "body": last}}, float("nan")
 
 
+def _to_openai(model: str, state, questions: dict) -> dict:
+    """Jev body -> OpenAI Decisions body, same instructions, option values and descriptions."""
+    qs = []
+    for name, q in questions.items():
+        if q["type"] == "noul":
+            qs.append({"type": "predicate", "name": name, "instructions": q["instructions"]})
+        elif q["type"] == "choice":
+            qs.append({"type": "choice", "name": name, "instructions": q["instructions"],
+                       "choices": [{"value": v, "description": d} for v, d in q["criteria"].items()]})
+        elif q["type"] == "score":
+            qs.append({"type": "score", "name": name, "instructions": q["instructions"],
+                       "levels": [{"label": d, "description": d} for d in q["criteria"]]})
+        else:
+            raise ValueError(q["type"])
+    text = state if isinstance(state, str) else json.dumps(state, ensure_ascii=False, indent=1)
+    return {"model": model, "input": text, "questions": qs}
+
+
+def _from_openai(d: dict) -> dict:
+    """OpenAI Decisions response -> Jev shape (answers keyed by question name, probabilities as dicts)."""
+    if "error" in d or "answers" not in d:
+        return d
+    out = {}
+    for a in d["answers"]:
+        if "error" in a:
+            out[a["name"]] = {"error": a["error"]}
+        elif a.get("type") in ("choice", "score") and "probabilities" not in a:  # kept as invalid, raw answer recorded
+            out[a["name"]] = {"error": {"malformed_answer": a}}
+        elif a["type"] == "predicate":
+            out[a["name"]] = {"noul": a["probability"]}
+        elif a["type"] == "choice":
+            out[a["name"]] = {"choice": a["choice"], "confidence": a.get("confidence"),
+                              "probabilities": {p["value"]: p["probability"] for p in a["probabilities"]}}
+        elif a.get("type") != "score":
+            out[a["name"]] = {"error": {"malformed_answer": a}}
+        else:
+            out[a["name"]] = {"score": a.get("score"), "confidence": a.get("confidence"),
+                              "probabilities": {str(p["value"]): p["probability"] for p in a["probabilities"]}}
+    return {**{k: v for k, v in d.items() if k != "answers"}, "answers": out, "raw_answers": d["answers"]}
+
+
 def decisions(system: str, state, questions: dict) -> dict:
     body = {"model": PROVIDERS[system][1], "state": state, "questions": questions}
     key = hashlib.sha256((system + json.dumps(body, sort_keys=False)).encode()).hexdigest()
@@ -110,8 +166,16 @@ def decisions(system: str, state, questions: dict) -> dict:
         rec = json.loads(f.read_text())
         rec["cached"] = True
         return rec
-    resp, lat = _post(system, body)
+    if system in OPENAI_SHAPE:
+        sent = _to_openai(body["model"], state, questions)
+        resp, lat = _post(system, sent)
+        resp = _from_openai(resp)
+    else:
+        sent = None
+        resp, lat = _post(system, body)
     rec = {"system": system, "request": body, "response": resp, "latency_s": lat, "ts": time.time()}
+    if sent:
+        rec["request_sent"] = sent
     err = resp.get("error")
     transient = err and (err.get("status") is None or err.get("status", 0) >= 500)
     if not transient and not (os.environ.get("DMA_NO_CACHE") and f.exists()):

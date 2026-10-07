@@ -303,11 +303,35 @@ Through Workers AI, Clef lost the deciding sentence in long inputs and 20 points
 
 The vendor function truncates the state silently at `max_length=16384` by default (max observed input 16,384 tokens; the backbone allows far more). With 65,536 the full 24k inputs reach the model (max 24,840 tokens) and Clef finds the sentence in 28 of 28 cases at a median of 11.5 s per 24k request (Clef-flash 4.1 s), with reference kernels (`causal_conv1d` and `flash-linear-attention` not installed). Clef-flash's remaining long-input errors are therefore the model's. An exploratory image check (50 Imagenette photos) is logged in the protocol and is not part of any comparison. Rows in `results/raw/*/*.selfhost.jsonl`, run scripts `scripts/run_clef_selfhost.sh` and `scripts/run_clef_selfhost2.sh`.
 
+### GPT-6 Luna through OpenAI's Decisions API (post hoc, 2026-10-07)
+
+OpenAI opened its Decisions API (`POST /v1/decisions`, model `gpt-6-luna` only, USD 0.10 per million input tokens) as a public beta on 2026-10-06. System `luna-decisions` ran the full programme of the API decision models with the identical instructions, options and items; `src/dma/ext_client.py` translates the Jev request and answer shapes one to one. Analyses: the unchanged part 1 and part 2 code on a copy of the raw rows (`src/dma/analysis/luna_decisions.py`, `results/luna_decisions.json`). p values are unadjusted; this system is in no Holm family. Results describe a public beta on this date.
+
+| | Luna, Decisions API | Jev | Luna, OpenRouter (part 1) |
+|---|---|---|---|
+| S1 accuracy | 85.5% [81.7, 88.6] | 86.25% | 88.75% |
+| Difference to Jev, paired | −0.75 [−3.75, +2.0], p = 0.74 | | |
+| Confidence exactly 1.0 | 60.5% (errors among them 4.1%) | 51.5% (5.3%) | 0% |
+| ECE (S1 choice) | 0.092 | 0.068 | 0.055 |
+| Automation at ≤ 5% error | 64.3% [0, 79.5] | 0% [0, 78.8] | 0% |
+| Yes/no form: accuracy, ECE, median yes sum | 80.0%, 0.331, 1.88 | 86.5%, 0.251, 1.25 | |
+| Same label on a repeated request (98 papers) | 100% (confidences identical) | 99.0% | 94.9% |
+| Batch of ten | 84.5% (−1.0 [−4.25, +2.25]) | 84.75% | 89.5% |
+| P1 error on stated chances (MAE) | 0.000 | 0.027 | 0.006 |
+| P3 500 / 2k / 8k / 24k | 1.00 / 1.00 / 1.00 / 1.00 | 1.00 everywhere | 1.00 everywhere |
+| P4: chose "none" / forced choice | 98% / refused 72 of 100 | 95% / 0 refused | 86% / 0 refused |
+| P5 / P6 / P7 | 99.5% / 94.4% / 43.7% | 98.4% / 97.8% / 61.3% | 98.9% / 95.0% / 49.3% |
+| S2 / FWF English, German | 98.6% / 89.5%, 88.7% | 99.4% / 89.3%, 89.0% | 99.7% / 86.8%, 86.8% |
+| Cost per 1,000 S1 decisions | USD 0.057 | USD 0.035 | USD 0.065 |
+| Latency p50 / p95, from Germany | 0.22 / 0.55 s | 0.47 / 0.60 s | 1.14 / 2.29 s |
+
+On S1 the Decisions API is level with Jev and 3.25 points below the same model through the chat interface (paired, [−6.5, −0.25], p = 0.060; same label on 88.5% of papers). Its answers are fully deterministic and its confidences are as saturated as Jev's: 60.5% of the answers carry exactly 1.0. Because only 4.1% of these are wrong, the automation estimate at 5% is 64.3%, at 2% it is 0; like Jev's, the estimate jumps with the target and its interval runs from 0 to 79.5%. Asked as eight yes/no questions, the yes probabilities add up to a median of 1.88 (95% of papers outside 0.9 to 1.1), more than Jev's 1.25. Stated chances in P1 are returned exactly. When no option fits and "none" is not offered, the API returns an answer of type `refusal` instead of a choice for 72 of 100 papers (recorded as invalid), as Tev1 did; refusals also occurred on 2 of 2,000 S1 choice-type requests (one per paraphrase), 8 of 400 yes/no requests, 4 of 358 S2 requests and 1 of 600 FWF requests per condition. Counting events (P7) is 17.6 points below Jev (p < 0.001), the source-and-claim probe P6 3.4 points below (6 against 0 discordant, p = 0.031). Order and paraphrase move it more than Jev (agreement with its own choice run 93.5% reversed, 94.5% and 96.5% paraphrased, Jev 97.5 to 99%). Bundling does not lower the cost per decision. Rows in `results/raw/*/*.luna-decisions.jsonl`, run script `scripts/run_teil2.sh` with `DMA_SUFFIX=luna-decisions`. Spend USD 0.59.
+
 ### Latency and cost
 
 Isolated latency, p50 / p95 seconds, 30 S1 papers, concurrency 1, cache bypassed:
 
-- Hosted: pplx-decider 0.26 / 0.29, Tev1 0.39 / 0.48, Jev 0.47 / 0.60, D1 0.52 / 1.05, Kev 4B 0.75 / 1.00, Solar 0.82 / 1.34, GLiDE 1.10 / 1.62 (all from Germany; Mercury not measured).
+- Hosted: Luna through the Decisions API 0.22 / 0.55 (post hoc, 2026-10-07), pplx-decider 0.26 / 0.29, Tev1 0.39 / 0.48, Jev 0.47 / 0.60, D1 0.52 / 1.05, Kev 4B 0.75 / 1.00, Solar 0.82 / 1.34, GLiDE 1.10 / 1.62 (all from Germany; Mercury not measured).
 - Laptop (M1 Pro, 16 GB): Kai 0.67 / 11.0 (MPS), Strands 0.93 / 1.29 (MPS), APUS 4B 1.76 / 2.24, APUS 9B 5.15 / 6.63 (MLX, 4-bit).
 - GPU (one A40): Nox 4B 0.15 / 0.19.
 - GPU (one A100 80 GB): Clef 0.35 / 0.39, Clef-flash 0.13 / 0.15 (self-hosted, see above).
