@@ -52,6 +52,10 @@ uv run python -m dma.analysis.finetune
 
 The run scripts in `scripts/` reproduce the model calls. Local models were run on an Apple M1 Pro with 16 GB of memory; in part 2, Decision 2.0 Nox 4B and the fine-tuning ran on one rented NVIDIA A40.
 
+## Author
+
+Built by [Dr. Oliver Borchers](https://www.drborchers.com), Executive AI and Automation Partner and Head of AI Engineering at IU Group.
+
 ## License
 
 Code and analysis: MIT, see [`LICENSE`](LICENSE). Third-party code in `third_party/` keeps its own license. The evaluation data keeps the terms of its sources: arXiv metadata, Federal Register documents and FWF project data (CC0).
